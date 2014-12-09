@@ -14,6 +14,7 @@ class particleData(TLorentzVector):
         self.sPID = 0
         self.sMomPID = 0
         self.status = 0
+        self.mcParentage = 0
 
     def MomPID(self):
         return self.sMomPID
@@ -23,6 +24,9 @@ class particleData(TLorentzVector):
     
     def Status(self):
         return self.status
+
+    def McParentage(self):
+        return self.mcParentage
                 
     def SetMomPID(self, iMomPID):
         self.sMomPID = iMomPID
@@ -32,3 +36,6 @@ class particleData(TLorentzVector):
         
     def SetStatus(self, iStatus):
         self.status = iStatus
+
+    def SetMcParentage(self, iMcParentage):
+        self.mcParentage = iMcParentage

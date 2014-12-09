@@ -11,10 +11,10 @@ import histogramBuilder
 
 def selectOnPhotonParent(photons):
     #if photons != None:
-    photons = filter(lambda photon: abs(photon.MomPID()) < 25, photons)
-    histogramBuilder.fillPtHistograms(photons, 'Photon_Pt_PostParentCut')
-    histogramBuilder.fillEtaHistograms(photons, 'Photon_Eta_PostParentCut')
-    return photons
+    filter_photons = filter(lambda photon: abs(photon.MomPID()) < 25, photons)
+    histogramBuilder.fillPtHistograms(filter_photons, 'Photon_Pt_PostParentCut')
+    histogramBuilder.fillEtaHistograms(filter_photons, 'Photon_Eta_PostParentCut')
+    return filter_photons
     
 def selectOnElectronParent(electrons):
     #if electrons != None:
