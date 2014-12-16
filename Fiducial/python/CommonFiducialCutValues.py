@@ -1,0 +1,29 @@
+# Cut Values for the Fiducial Common
+# Common refers to the fact that cuts on
+# The Electron and Muon Channel are the same
+
+# Particle Multiplicity
+NUM_CANDIDATE_LEPTONS=1
+NUM_CANDIDATE_PHOTONS=2
+
+# Kinematic Cuts
+PHOTON_CANDIDATE_MIN_PT=15
+PHOTON_CANDIDATE_MAX_ETA=2.5
+
+ELECTRON_CANDIDATE_MIN_PT=25
+ELECTRON_CANDIDATE_MAX_ETA=2.5
+
+MUON_CANDIDATE_MIN_PT=25
+MUON_CANDIDATE_MAX_ETA=2.5
+
+# Parentage Cuts
+CUT_QCD_PHOTONS=True
+
+# Delta R Cuts
+PHOTON_PHOTON_DR=0.4
+PHOTON_ELECTRON_DR=0.4
+PHOTON_MUON_DR=0.4
+
+
+
+
