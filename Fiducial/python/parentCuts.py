@@ -26,19 +26,27 @@ def selectOnPhotonParent(photons):
     #histogramBuilder.fillPtHistograms(filter_photons, 'Photon_Pt_PostParentCut')
     #histogramBuilder.fillEtaHistograms(filter_photons, 'Photon_Eta_PostParentCut')
     return filter_photons
+
+def selectOnParentID(particles, parentID):
+    #if particles != None:
+    particles = filter(lambda particle: abs(particle.MomPID()) == parentID,
+                       particles)
+    return particles                  
     
-def selectOnElectronParent(electrons):
+#def selectOnElectronParent(electrons):
     #if electrons != None:
-    electrons = filter(lambda electron: abs(electron.MomPID()) == 24
-                       or abs(electron.MomPID()) ==15, electrons)
+    #electrons = filter(lambda electron: abs(electron.MomPID()) == 24
+                       #or abs(electron.MomPID()) ==15
+    #                   , electrons)
     #histogramBuilder.fillPtHistograms(electrons, 'Electron_Pt_PostWParentCut')
     #histogramBuilder.fillEtaHistograms(electrons, 'Electron_Eta_PostWParentCut')
-    return electrons
+    #return electrons
 
-def selectOnMuonParent(muons):
+#def selectOnMuonParent(muons):
     #if muons != None:
-    muons = filter(lambda muon: abs(muon.MomPID()) == 24
-                   or abs(muon.MomPID()==15), muons)
+    #muons = filter(lambda muon: abs(muon.MomPID()) == 24
+                   #or abs(muon.MomPID()==15)
+    #               , muons)
     #histogramBuilder.fillPtHistograms(muons, 'Muon_Pt_PostWParentCut')
     #histogramBuilder.fillEtaHistograms(muons, 'Muon_Eta_PostWParentCut')
-    return muons
+    #return muons

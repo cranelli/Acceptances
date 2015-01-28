@@ -7,73 +7,125 @@
 from ROOT import TLorentzVector
 from ROOT import TH1F, TH2F
 
+from array import array
+
 Histograms = {}
  
 # Function to Create and Fill Count Histograms
-def fillCountHistograms(particles, key, bins=2, xmin=0, xmax=2):
+#def fillParticleCountHistograms(particles, key, bins=2, xmin=0, xmax=2):
+#    if not key in Histograms:
+#        Histograms[key] = TH1F(key,key, bins, xmin, xmax)
+#    for particle in particles: Histograms[key].Fill(1)
+
+def fillPtCategoryHistograms(key, pt, weight=1,bins=4):
+    binLowE = [15,25,40,70,200]
+    if not key in Histograms:
+        Histograms[key]=TH1F(key, key, bins,array('d',binLowE))
+        Histograms[key].Sumw2()
+    Histograms[key].Fill(pt, weight)
+
+def fillPhotonLocationCategoryHistograms(key, locId, weight=1,bins=4, xmin=0, xmax=4):
     if not key in Histograms:
         Histograms[key] = TH1F(key,key, bins, xmin, xmax)
-    for particle in particles: Histograms[key].Fill(1)
+        Histograms[key].Sumw2()
+    Histograms[key].Fill(locId)
 
+def fillPtAndLocationCategoryHistograms(key,locId, pt, weight=1, xbins=4, xmin=0, xmax=4, ybins=4):
+    binLowE = [15,25,40,70,200]
+    if not key in Histograms:
+        Histograms[key] = TH2F(key,key, xbins, xmin, xmax, ybins, array('d',binLowE))
+        Histograms[key].Sumw2()
+    Histograms[key].Fill(locId,pt,weight)
+
+def fillCountHistograms(prefix, weight=1, bins=2, xmin=0, xmax=2):
+    key = prefix + "_Count"
+    if not key in Histograms:
+        Histograms[key] = TH1F(key,key, bins, xmin, xmax)
+        Histograms[key].GetYaxis().SetTitle("Counts")
+        Histograms[key].Sumw2()
+    Histograms[key].Fill(1,weight)
+
+def fillScaleFactorHistograms(key, scaleFactor, weight=1, bins=200, xmin=0, xmax=2):
+    if not key in Histograms:
+        Histograms[key] = TH1F(key,key, bins, xmin, xmax)
+    Histograms[key].Fill(scaleFactor,weight)
+    
 #Function to Create and Fill Number of Particles Histograms
-def fillNumParticleHistograms(particles, key, bins=20, xmin=0, xmax=20):
-    if not key in Histograms:
-        Histograms[key] = TH1F(key,key, bins, xmin, xmax)
-    Histograms[key].Fill(len(particles))
-
-# Function to Create and Fill Pt Histograms
-def fillPtHistograms(particles, key, bins=400, xmin=0, xmax=200):
-    if not key in Histograms:
-        Histograms[key] = TH1F(key,key, bins, xmin, xmax)
-    for particle in particles: Histograms[key].Fill(particle.Pt())
-
-# Function To Create and Fill Eta Histograms
-def fillEtaHistograms(particles, key, bins=120, xmin=-3, xmax=3):
-    if not key in Histograms:
-        Histograms[key] = TH1F(key,key, bins, xmin, xmax)
-    for particle in particles: Histograms[key].Fill(particle.Eta())
-
-# Watch out for double counting when particles1 = particles2
-def fillDeltaRHistograms(particles1, particles2, key, bins=200, xmin=0, xmax=10):
+def fillMultiplicityHistograms(prefix, multiplicity, weight=1, bins=20, xmin=0, xmax=20):
+    key = prefix+"_Multiplicity"
     if not key in Histograms:
         Histograms[key] = TH1F(key, key, bins, xmin, xmax)
-    for particle1 in particles1:
-        for particle2 in particles2:
-            if particle1 != particle2: # Don't Histogram comparison with itself
-                Histograms[key].Fill(particle1.DeltaR(particle2))
-        
-def fillStatusHistograms(particles, key, bins=8, xmin=0, xmax=4):
+        Histograms[key].GetYaxis().SetTitle("Multiplicity")
+        Histograms[key].Sumw2()
+    Histograms[key].Fill(multiplicity, weight)
+
+# Function to Create and Fill Pt Histograms
+def fillPtHistograms(prefix, pt, bins=400, xmin=0, xmax=200):
+    key = prefix+"_Pt"
     if not key in Histograms:
         Histograms[key] = TH1F(key,key, bins, xmin, xmax)
-    for particle in particles: Histograms[key].Fill(particle.Status())
+        Histograms[key].GetYaxis().SetTitle("Pt (GeV)")
+        Histograms[key].Sumw2()
+    Histograms[key].Fill(pt)
+
+# Function To Create and Fill Eta Histograms
+def fillEtaHistograms(prefix, eta, bins=120, xmin=-3, xmax=3):
+    key = prefix+"_Eta"
+    if not key in Histograms:
+        Histograms[key] = TH1F(key,key, bins, xmin, xmax)
+        Histograms[key].Sumw2()
+    Histograms[key].Fill(eta)
+
+# Watch out for double counting when particles1 = particles2
+def fillDeltaRHistograms(prefix, deltaR, bins=200, xmin=0, xmax=8):
+    key = prefix + "_dR"
+    if not key in Histograms:
+        Histograms[key] = TH1F(key, key, bins, xmin, xmax)
+        Histograms[key].Sumw2()
+    Histograms[key].Fill(deltaR)
+
+def fillStatusHistograms(prefix, status, bins=4, xmin=0, xmax=4):
+    key = prefix+ "_Status"
+    if not key in Histograms:
+        Histograms[key] = TH1F(key,key, bins, xmin, xmax)
+        Histograms[key].Sumw2()
+    Histograms[key].Fill(status)
+
+def fillPDGIDHistograms(prefix, pdgId, bins=100, xmin=-50, xmax=50):
+    key = prefix +"_PDGID"
+    if not key in Histograms:
+        Histograms[key] = TH1F(key,key, bins, xmin, xmax)
+        Histograms[key].Sumw2()
+    Histograms[key].Fill(pdgId)
 
 def fillMHistograms(m, key, bins=300, xmin=0, xmax=300):
     if not key in Histograms:
         Histograms[key] = TH1F(key, key, bins, xmin, xmax)
+        Histogrmas[key].Sumw2()
     Histograms[key].Fill(m)
     
-def fillStandardHistograms(photons, electrons, muons, suffix):
+#def fillStandardHistograms(photons, electrons, muons, suffix):
     # Photons
-    fillCountHistograms(photons, 'Photon_'+suffix)
-    fillPtHistograms(photons, 'Photon_Pt_' + suffix)
-    fillEtaHistograms(photons, 'Photon_Eta_' + suffix)
-    fillNumParticleHistograms(photons, 'Photon_Num_' + suffix)
-    fillStatusHistograms(photons, "Photon_Status_" + suffix)
+#    fillCountHistograms(photons, 'Photon_'+suffix)
+#    fillPtHistograms(photons, 'Photon_Pt_' + suffix)
+#    fillEtaHistograms(photons, 'Photon_Eta_' + suffix)
+#    fillNumParticleHistograms(photons, 'Photon_Num_' + suffix)
+#    fillStatusHistograms(photons, "Photon_Status_" + suffix)
     # Electrons
-    fillCountHistograms(electrons, 'Electron_' + suffix)
-    fillPtHistograms(electrons, 'Electron_Pt_' + suffix)
-    fillEtaHistograms(electrons, 'Electron_Eta_' + suffix)
-    fillNumParticleHistograms(electrons, 'Electron_Num_' + suffix)
-    fillStatusHistograms(electrons, "Photon_Status_" + suffix)
+#    fillCountHistograms(electrons, 'Electron_' + suffix)
+#    fillPtHistograms(electrons, 'Electron_Pt_' + suffix)
+#    fillEtaHistograms(electrons, 'Electron_Eta_' + suffix)
+#    fillNumParticleHistograms(electrons, 'Electron_Num_' + suffix)
+#    fillStatusHistograms(electrons, "Photon_Status_" + suffix)
     # Muons
-    fillCountHistograms(muons, 'Muon_' + suffix)
-    fillPtHistograms(muons, 'Muon_Pt_' + suffix)
-    fillEtaHistograms(muons, 'Muon_Eta_' + suffix)
-    fillNumParticleHistograms(muons, 'Muon_Num_' + suffix)
-    fillStatusHistograms(muons, "Photon_Status_" + suffix)
+#    fillCountHistograms(muons, 'Muon_' + suffix)
+#    fillPtHistograms(muons, 'Muon_Pt_' + suffix)
+#    fillEtaHistograms(muons, 'Muon_Eta_' + suffix)
+#    fillNumParticleHistograms(muons, 'Muon_Num_' + suffix)
+#    fillStatusHistograms(muons, "Photon_Status_" + suffix)
     # Delta R
-    fillDeltaRHistograms(photons, electrons, 'DeltaR(Ae)_' + suffix)
-    fillDeltaRHistograms(photons, muons, 'DeltaR(AMu)_' + suffix)
-    fillDeltaRHistograms(photons, photons, 'DeltaR(AA)_' + suffix)
+#    fillDeltaRHistograms(photons, electrons, 'DeltaR(Ae)_' + suffix)
+#    fillDeltaRHistograms(photons, muons, 'DeltaR(AMu)_' + suffix)
+#    fillDeltaRHistograms(photons, photons, 'DeltaR(AA)_' + suffix)
     
 

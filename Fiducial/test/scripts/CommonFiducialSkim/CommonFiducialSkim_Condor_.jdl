@@ -1,0 +1,12 @@
+universe = vanilla
+Executable = ./CommonFiducialSkim_Condor.sh
+should_transfer_files = NO
+##should_transfer_files = YES
+##when_to_transfer_output = ON_EXIT
+notify_user = Christopher.Anelli@gmail.com
+Output = Condor_HOMuon_$(cluster)_$(process).stdout
+Error  = Condor_HOMuon_$(cluster)_$(process).stderr
+Log    = Condor_HOMuon_$(cluster)_$(process).condor
+Arguments = $(cluster) $(process) /home/cranelli/WGamGam/Acceptances/CMSSW_5_3_12/src/Acceptances/Fiducial/python/ 800000 -1 job_summer12_LNuGG_FSR.root job_summer12_LNuGG_FSR_CommonFiducialSkim_part5.root
+
+Queue 1

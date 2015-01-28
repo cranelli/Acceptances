@@ -9,25 +9,29 @@ from ROOT import TLorentzVector
 import CommonFiducialCutValues
 
 # Particle Number
-reqNumPhotons = CommonFiducialCutValues.NUM_CANDIDATE_PHOTONS
-reqNumLeptons = CommonFiducialCutValues.NUM_CANDIDATE_LEPTONS
+#reqNumPhotons = CommonFiducialCutValues.NUM_CANDIDATE_PHOTONS
+#reqNumLeptons = CommonFiducialCutValues.NUM_CANDIDATE_LEPTONS
 
 # Delta R
-minPhotonPhotonDeltaR = CommonFiducialCutValues.PHOTON_PHOTON_DR
-minPhotonElectronDeltaR = CommonFiducialCutValues.PHOTON_ELECTRON_DR
-minPhotonMuonDeltaR = CommonFiducialCutValues.PHOTON_MUON_DR
+#minPhotonPhotonDeltaR = CommonFiducialCutValues.PHOTON_PHOTON_DR
+#minPhotonElectronDeltaR = CommonFiducialCutValues.PHOTON_ELECTRON_DR
+#minPhotonMuonDeltaR = CommonFiducialCutValues.PHOTON_MUON_DR
 
 zMass = 91.2
 
 # Reject Event if it does not have a Single Lepton and Two Photons
-def passReqNumParticles(photons, electrons, muons):
+def passReqNumParticles(photons, electrons, muons, reqNumPhotons, reqNumLeptons):
     if len(photons) == reqNumPhotons:
         if len(electrons) == reqNumLeptons and len(muons) == 0: return True
         if len(electrons) == 0 and len(muons) == reqNumLeptons: return True
+
+        #if len(electrons) == reqNumLeptons and len(muons) == 0 and len(taus) == 0: return True
+        #if len(electrons) == 0 and len(muons) == reqNumLeptons and len(taus) == 0: return True
+        #if len(electrons) == 0 and len(muons) == 0 and len(taus) == reqNumLeptons: return True
     return False
 
 # Reject Event if the Photons are Too Close
-def passPhotonPhotonDeltaR(photons):
+def passPhotonPhotonDeltaR(photons, minPhotonPhotonDeltaR):
     for photon1 in photons:
         for photon2 in photons:
             if photon1 == photon2: continue # Do Not Compare it to Itself
@@ -35,20 +39,27 @@ def passPhotonPhotonDeltaR(photons):
     # Only if all pairings pass
     return True 
 
-# Reject Event if Photon and Electron are too close
-def passPhotonElectronDeltaR(photons, electrons):
+def passPhotonLeptonDeltaR(photons, leptons, minPhotonLeptonDeltaR):
     for photon in photons:
-        for electron in electrons:
-            if photon.DeltaR(electron) < minPhotonElectronDeltaR: return False
+        for lepton in leptons:
+            if photon.DeltaR(lepton) < minPhotonLeptonDeltaR: return False
     # Only if all pairings pass
     return True
 
-def passPhotonMuonDeltaR(photons, muons):
-    for photon in photons:
-        for muon in muons:
-            if photon.DeltaR(muon) < minPhotonMuonDeltaR: return False
+# Reject Event if Photon and Electron are too close
+#def passPhotonElectronDeltaR(photons, electrons):
+#    for photon in photons:
+#        for electron in electrons:
+#            if photon.DeltaR(electron) < minPhotonElectronDeltaR: return False
     # Only if all pairings pass
-    return True
+#    return True
+
+#def passPhotonMuonDeltaR(photons, muons):
+#    for photon in photons:
+#        for muon in muons:
+#            if photon.DeltaR(muon) < minPhotonMuonDeltaR: return False
+    # Only if all pairings pass
+#    return True
 
 def passZ2Mass(photons, electrons):
     for photon in photons:

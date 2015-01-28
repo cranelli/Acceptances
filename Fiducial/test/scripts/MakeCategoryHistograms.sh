@@ -1,0 +1,21 @@
+#!/bin/bash
+
+cd /home/cranelli/WGamGam/Acceptances/CMSSW_5_3_12/src/Acceptances/Fiducial/python;
+
+python MakeRecoCategoryHistograms.py AnalysisRecoCuts_ScaleFactors_WAA_ISR.root AnalysisRecoCuts_ScaleFactors_WAA_ISR_CategoryHistograms.root
+
+python MakeRecoCategoryHistograms.py AnalysisRecoCuts_ScaleFactors_Wgg_FSR.root AnalysisRecoCuts_ScaleFactors_Wgg_FSR_CategoryHistograms.root
+
+python MakeGenCategoryHistograms.py job_summer12_WAA_ISR/ggtree_mc_ISR_CommonFiducialSkim.root CommonFiducialSkim_WAA_ISR_CategoryHistograms.root
+
+python MakeGenCategoryHistograms.py job_summer12_Wgg_FSR/job_summer12_LNuGG_FSR_CommonFiducialSkim.root CommonFiducialSkim_Wgg_FSR_CategoryHistograms.root
+
+cd /home/cranelli/WGamGam/Acceptances/CMSSW_5_3_12/src/Acceptances/Fiducial/test/scripts
+
+echo "python weightAndAddHistograms.py ../CommonFiducialSkim_WAA_ISR_CategoryHistograms.root ../CommonFiducialSkim_Wgg_FSR_CategoryHistograms.root ../CommonFiducialSkim_Wgg_WeightedTotal_CategoryHistograms.root"
+
+python weightAndAddHistograms.py ../CommonFiducialSkim_WAA_ISR_CategoryHistograms.root ../CommonFiducialSkim_Wgg_FSR_CategoryHistograms.root ../CommonFiducialSkim_Wgg_WeightedTotal_CategoryHistograms.root
+
+echo "python weightAndAddHistograms.py ../CommonFiducialSkim_WAA_ISR_CategoryHistograms.root ../CommonFiducialSkim_Wgg_FSR_CategoryHistograms.root ../CommonFiducialSkim_Wgg_WeightedTotal_CategoryHistograms.root"
+
+python weightAndAddHistograms.py ../AnalysisRecoCuts_ScaleFactors_WAA_ISR_CategoryHistograms.root ../AnalysisRecoCuts_ScaleFactors_Wgg_FSR_CategoryHistograms.root ../AnalysisRecoCuts_ScaleFactors_WeightedTotal_CategoryHistograms.root
