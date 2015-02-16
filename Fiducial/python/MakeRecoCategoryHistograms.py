@@ -3,8 +3,7 @@
 # channels and our different categories.
 # 
 # Example execution from command line:
-#python MakeRecoCategoryHistograms.py AnalysisRecoCuts_ScaleFactors_Wgg_FSR.root
-# AnalysisRecoCuts_ScaleFactors_Wgg_FSR_CategoryHistograms.root
+#python MakeRecoCategoryHistograms.py AnalysisRecoCuts_ScaleFactors_Wgg_FSR.root AnalysisRecoCuts_ScaleFactors_Wgg_FSR_CategoryHistograms.root
 
 
 import sys
