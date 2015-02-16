@@ -17,20 +17,23 @@ Histograms = {}
 #        Histograms[key] = TH1F(key,key, bins, xmin, xmax)
 #    for particle in particles: Histograms[key].Fill(1)
 
-def fillPtCategoryHistograms(key, pt, weight=1,bins=4):
+def fillPtCategoryHistograms(prefix, pt, weight=1,bins=4):
+    key=prefix + "_Category_Pt"
     binLowE = [15,25,40,70,200]
     if not key in Histograms:
         Histograms[key]=TH1F(key, key, bins,array('d',binLowE))
         Histograms[key].Sumw2()
     Histograms[key].Fill(pt, weight)
 
-def fillPhotonLocationCategoryHistograms(key, locId, weight=1,bins=4, xmin=0, xmax=4):
+def fillPhotonLocationCategoryHistograms(prefix, locId, weight=1,bins=4, xmin=0, xmax=4):
+    key=prefix + "_Category_PhotonLocations"
     if not key in Histograms:
         Histograms[key] = TH1F(key,key, bins, xmin, xmax)
         Histograms[key].Sumw2()
     Histograms[key].Fill(locId)
 
-def fillPtAndLocationCategoryHistograms(key,locId, pt, weight=1, xbins=4, xmin=0, xmax=4, ybins=4):
+def fillPtAndLocationCategoryHistograms(prefix,locId, pt, weight=1, xbins=4, xmin=0, xmax=4, ybins=4):
+    key=prefix + "_Category_PtAndLocation"
     binLowE = [15,25,40,70,200]
     if not key in Histograms:
         Histograms[key] = TH2F(key,key, xbins, xmin, xmax, ybins, array('d',binLowE))

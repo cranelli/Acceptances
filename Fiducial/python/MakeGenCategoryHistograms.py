@@ -18,7 +18,7 @@ import histogramBuilder
 origFileDir="/data/users/cranelli/WGamGam/Acceptances/CommonFiducial_Skim/ggNtuples_Skim/"
 treeLoc="ggNtuplizer/EventTree"
 
-outFileDir="/home/cranelli/WGamGam/Acceptances/CMSSW_5_3_12/src/Acceptances/Fiducial/test/"
+outFileDir="../test/"
 #newFileLoc="ggtree_ISR_Tau.root"
 
 #histDirLoc = 'histOutput/'
@@ -80,11 +80,11 @@ def MakeRecoCategoryHistograms(inFileName="job_summer12_WAA_ISR/ggtree_mc_ISR_Co
     outFile.Write()
 
 def MakeHistograms(tree, decay, photons):
-    histogramBuilder.fillCountHistograms("Count_"+decay)
+    histogramBuilder.fillCountHistograms(decay)
     leadPhoton = selectLead(photons)
     histogramBuilder.fillPtCategoryHistograms("Category_LeadPhotonPt_"+decay, leadPhoton.Pt())
-    histogramBuilder.fillPhotonLocationCategoryHistograms("Category_PhotonLocations_"+decay, findPhotonLocations(photons))
-    histogramBuilder.fillPtAndLocationCategoryHistograms("Category_PtAndLocation_"+decay, findPhotonLocations(photons), leadPhoton.Pt())
+    histogramBuilder.fillPhotonLocationCategoryHistograms(decay, findPhotonLocations(photons))
+    histogramBuilder.fillPtAndLocationCategoryHistograms(decay, findPhotonLocations(photons), leadPhoton.Pt())
     
 
 #Separate Lead and Sub Lead Photons between Barrel and EndCap.

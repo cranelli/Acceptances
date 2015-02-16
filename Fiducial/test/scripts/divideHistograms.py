@@ -12,8 +12,10 @@ file1Loc = "../AnalysisRecoCuts_ScaleFactors_WeightedTotal_CategoryHistograms.ro
 file2Loc= "../CommonFiducialSkim_Wgg_WeightedTotal_CategoryHistograms.root"
 outFileLoc= "../Acceptances.root"
 
-numerators=["Count_ScaleFactorWeight", "Category_PtAndLocation_ScaleFactorWeight"]
+numerators=["ScaleFactorWeight_Count", "ScaleFactorWeight_Category_PtAndLocation"]
 channels=["MuonChannel", "ElectronChannel"]
+sfs=[["mu_TrigSFUP", "mu_TrigSFDN", "ph_idSFUP", "ph_idSFDN"],
+    ["el_TrigSFUP", "el_TrigSFDN", "ph_idSFUP", "ph_idSFDN", "ph_evetoSFUP", "ph_evetoSFDN"]]
 denominators=["Count", "Category_PtAndLocation"]
 decays=["MuonDecay", "ElectronDecay"]
 #hist1Name="Category_PtAndLocation_MuonChannel"
@@ -30,13 +32,23 @@ def divideHistograms():
     
     for i in range(len(numerators)):
         for j in range(len(channels)):
-            print numerators[i]+"_"+channels[j]
-            hist1 = file1.Get(numerators[i]+"_" +channels[j])
-            
-            hist2 = file2.Get(denominators[i]+"_"+ decays[j])
-            divideHist = hist1.Clone(numerators[i]+"_Acceptances_"+channels[j])
+            print channels[j]+"_"+numerators[i]
+            hist1 = file1.Get(channels[j]+"_"+numerators[i])
+            hist1.Print()
+            hist2 = file2.Get(decays[j] +"_"+denominators[i])
+            hist2.Print()
+            divideHist = hist1.Clone(channels[j]+"_Acceptances_"+numerators[i])
             divideHist.Divide(hist2)
             divideHist.Write()
+            for k in range(len(sfs[j])):
+                print channels[j]+"_"+sfs[j][k]+"_"+numerators[i]
+                hist1 = file1.Get(channels[j]+"_"+sfs[j][k]+"_"+numerators[i])
+                hist1.Print()
+                hist2 = file2.Get( decays[j]+"_"+denominators[i])
+                hist2.Print()
+                divideHist = hist1.Clone(channels[j]+"_Acceptances_"+"_"+sfs[j][k]+"_" +numerators[i])
+                divideHist.Divide(hist2)
+                divideHist.Write()
     #weightedSumHist.Add(hist1, hist2, weight1, weight2)
     
            
