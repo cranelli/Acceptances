@@ -37,7 +37,7 @@ def divideHistograms():
             hist1.Print()
             hist2 = file2.Get(decays[j] +"_"+denominators[i])
             hist2.Print()
-            divideHist = hist1.Clone(channels[j]+"_Acceptances_"+numerators[i])
+            divideHist = hist1.Clone(channels[j]+"_"+numerators[i]+"_Acceptances")
             divideHist.Divide(hist2)
             divideHist.Write()
             for k in range(len(sfs[j])):
@@ -46,7 +46,7 @@ def divideHistograms():
                 hist1.Print()
                 hist2 = file2.Get( decays[j]+"_"+denominators[i])
                 hist2.Print()
-                divideHist = hist1.Clone(channels[j]+"_Acceptances_"+"_"+sfs[j][k]+"_" +numerators[i])
+                divideHist = hist1.Clone(channels[j]+"_" +numerators[i]+"_"+sfs[j][k]+"_Acceptances")
                 divideHist.Divide(hist2)
                 divideHist.Write()
     #weightedSumHist.Add(hist1, hist2, weight1, weight2)
