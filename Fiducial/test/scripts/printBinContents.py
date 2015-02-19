@@ -13,8 +13,8 @@ from ROOT import TH1F
 #histName="Acceptances"
 
 fileLoc ="../AnalysisRecoCuts_ScaleFactors_WeightedTotal_CategoryHistograms.root"
-histName="Category_PtAndLocation_ElectronChannel"
-outFileLoc="/home/cranelli/WGamGam/Acceptances/CMSSW_5_3_12/src/Acceptances/Fiducial/test/Tables/PrintTest.html"
+histName="ElectronChannel_Category_PtAndLocation"
+outFileLoc="../Tables/PrintTest.html"
 #histName="Category_PtAndLocation_ScaleFactorWeightMuonChannel"
 
 htmlTableHeader=""" <table id="title" border="2" cellspacing="2" cellpadding="3" frame="border" rules="all" summary="summary of table"><tbody> """
@@ -45,18 +45,26 @@ def printh2BinContent(file, h2Name, outfile):
     print "Bins' Content:"
     h2 = file.Get(h2Name)
     outfile.write(htmlTableHeader)
+    outfile.write("""<tr align="center"> """+ str(h2Name) + """</tr>""")
     output=""
     htmlOutput=""
     #Loop Over Rows
-    for i in range(1, h2.GetNbinsX()+1):
+    for i in range(0, h2.GetNbinsX()+1):
         outfile.write("""<tr align="center">""")
         #Loop Over Colums
         for j in range(1, h2.GetNbinsY()+1):
-            output = str(h2.GetXaxis().GetBinLowEdge(i))+","+str(h2.GetYaxis().GetBinLowEdge(j))+" : "+ str(format(h2.GetBinContent(i,j),'.3f'))+" pm " + str(format(h2.GetBinError(i,j),'.3f'))
-            # Bin Content and Errors in HTML format
-            htmlOutput = """<td valign="middle">""" + str(format(h2.GetBinContent(i,j),'.3f'))+""" &plusmn """ + str(format(h2.GetBinError(i,j),'.3f'))+ """</td>""" 
-            outfile.write(htmlOutput)
-            print output
+            #For the First Time Write Out Column Range
+            if i == 0:
+                #htmlOutput = """<td valign="middle">""" + str(format(h2.GetYaxis().GetBinLowEdge(j),'.0f')) +   """-""" + str(format(h2.GetYaxis().GetBinLowEdge(j+1),'.0f')) + """</td>"""
+                #outfile.write(htmlOutput)
+            else:
+                # Bin Content and Errors in HTML format
+                htmlOutput = """<td valign="middle">""" + str(format(h2.GetBinContent(i,j),'.3f'))+""" &plusmn """ + str(format(h2.GetBinError(i,j),'.3f'))+ """</td>"""
+            
+                output = str(h2.GetXaxis().GetBinLowEdge(i))+","+str(h2.GetYaxis().GetBinLowEdge(j))+" : "+ str(format(h2.GetBinContent(i,j),'.3f'))+" pm " + str(format(h2.GetBinError(i,j),'.3f'))
+
+                outfile.write(htmlOutput)
+                print output
         outfile.write("""</tr>""")
             
     outfile.write(htmlTableCloser)
