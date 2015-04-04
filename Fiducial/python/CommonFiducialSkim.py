@@ -3,7 +3,7 @@
 #The values of these cuts are defined in CommonFiducialCutValues.
 #Is passed arguments for startRange, stopRange, inFile, outFile
 #Example Call
-# python CommonFiducialSkim.py 0 10000 ggtree_mc_ISR.root test.root
+# python CommonFiducialSkim.py 0 10000 ggNtuples/ggtree_mc_ISR.root test.root
 
 import sys
 
@@ -20,7 +20,7 @@ import parentCuts
 #import histPublish
 import histogramBuilder
 
-origFileDir="/data/users/cranelli/WGamGam/ggNtuples/"
+origFileDir="/data/users/cranelli/WGamGam/"
 origTreeLoc="ggNtuplizer/EventTree"
 skimFileDir="../test/"
 
@@ -35,7 +35,7 @@ minPhotonPhotonDeltaR = CommonFiducialCutValues.PHOTON_PHOTON_DR
 minPhotonLeptonDeltaR = CommonFiducialCutValues.PHOTON_LEPTON_DR 
 
 
-def CommonFiducialSkim(startRange=0, endRange=-1, inFileName="job_summer12_LNuGG_FSR.root",
+def CommonFiducialSkim(startRange=0, endRange=-1, inFileName="ggNtuples/job_summer12_LNuGG_FSR.root",
                        outFileName="test.root"):
     # Original File
     origFile = TFile(origFileDir+inFileName)

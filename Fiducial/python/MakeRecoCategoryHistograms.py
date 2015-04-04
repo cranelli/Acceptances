@@ -3,7 +3,7 @@
 # channels and our different categories.
 # 
 # Example execution from command line:
-#python MakeRecoCategoryHistograms.py AnalysisRecoCuts_ScaleFactors_Wgg_FSR.root AnalysisRecoCuts_ScaleFactors_Wgg_FSR_CategoryHistograms.root
+#python MakeRecoCategoryHistograms.py ../test/AnalysisRecoCuts_ScaleFactors_Wgg_FSR.root AnalysisRecoCuts_ScaleFactors_Wgg_FSR_CategoryHistograms.root
 
 
 import sys
@@ -18,16 +18,16 @@ import parentCuts
 
 import histogramBuilder
 
-inFileDir="../test/"
+#inFileDir="../test/"
 treeLoc="ggNtuplizer/EventTree"
 
 outFileDir="../test/"
 
 
-def MakeRecoCategoryHistograms(inFileName="ggTree_mc_ISR.root", outFileName="test.root"):
+def MakeRecoCategoryHistograms(inFileLoc="ggTree_mc_ISR.root", outFileName="test.root"):
 
     # In File, Out File, and Tree
-    inFile = TFile(inFileDir+inFileName)
+    inFile = TFile(inFileLoc)
     tree = inFile.Get(treeLoc)
     outFile = TFile(outFileDir + outFileName, "RECREATE")
     
@@ -46,39 +46,9 @@ def MakeRecoCategoryHistograms(inFileName="ggTree_mc_ISR.root", outFileName="tes
             channel="ElectronChannel"
             scalefactor = tree.el_trigSF*tree.ph_idSF*tree.ph_evetoSF*tree.PUWeight
             MakeHistograms(tree, channel, scalefactor)
-            channel="ElectronChannel_el_TrigSFUP"
-            scalefactor = tree.el_trigSFUP*tree.ph_idSF*tree.ph_evetoSF*tree.PUWeight
-            MakeHistograms(tree, channel, scalefactor)
-            channel="ElectronChannel_el_TrigSFDN"
-            scalefactor = tree.el_trigSFDN*tree.ph_idSF*tree.ph_evetoSF*tree.PUWeight
-            MakeHistograms(tree, channel, scalefactor)
-            channel="ElectronChannel_ph_idSFUP"
-            scalefactor = tree.el_trigSF*tree.ph_idSFUP*tree.ph_evetoSF*tree.PUWeight
-            MakeHistograms(tree, channel, scalefactor)
-            channel="ElectronChannel_ph_idSFDN"
-            scalefactor = tree.el_trigSF*tree.ph_idSFDN*tree.ph_evetoSF*tree.PUWeight
-            MakeHistograms(tree, channel, scalefactor)
-            channel="ElectronChannel_ph_evetoSFUP"
-            scalefactor = tree.el_trigSF*tree.ph_idSF*tree.ph_evetoSFUP*tree.PUWeight
-            MakeHistograms(tree, channel, scalefactor)
-            channel="ElectronChannel_ph_evetoSFDN"
-            scalefactor = tree.el_trigSFUP*tree.ph_idSF*tree.ph_evetoSFDN*tree.PUWeight
-            MakeHistograms(tree, channel, scalefactor)
         if(isMuonChannel):
             channel="MuonChannel"
             scalefactor = tree.mu_trigSF*tree.mu_isoSF*tree.mu_idSF*tree.ph_idSF*tree.PUWeight
-            MakeHistograms(tree, channel, scalefactor)
-            channel="MuonChannel_mu_TrigSFUP"
-            scalefactor = tree.mu_trigSFUP*tree.mu_isoSF*tree.mu_idSF*tree.ph_idSF*tree.PUWeight
-            MakeHistograms(tree, channel, scalefactor)
-            channel="MuonChannel_mu_TrigSFDN"
-            scalefactor = tree.mu_trigSFDN*tree.mu_isoSF*tree.mu_idSF*tree.ph_idSF*tree.PUWeight
-            MakeHistograms(tree, channel, scalefactor)
-            channel="MuonChannel_ph_idSFUP"
-            scalefactor = tree.mu_trigSF*tree.mu_isoSF*tree.mu_idSF*tree.ph_idSFUP*tree.PUWeight
-            MakeHistograms(tree, channel, scalefactor)
-            channel="MuonChannel_ph_idSFDN"
-            scalefactor = tree.mu_trigSF*tree.mu_isoSF*tree.mu_idSF*tree.ph_idSFDN*tree.PUWeight
             MakeHistograms(tree, channel, scalefactor)
 
         #if(not isElectronChannel and not isMuonChannel):
@@ -90,6 +60,7 @@ def MakeHistograms(tree, channel, scalefactor):
     histogramBuilder.fillCountHistograms(channel)
     histogramBuilder.fillCountHistograms(channel+"_ScaleFactorWeight", scalefactor)
     histogramBuilder.fillScaleFactorHistograms("ScaleFactors_"+channel, scalefactor)
+    histogramBuilder.fillPtHistograms(channel+"_ScaleFactorWeight", tree.pt_leadph12, scalefactor)
     histogramBuilder.fillPtCategoryHistograms(channel+"_ScaleFactorWeight", tree.pt_leadph12, scalefactor)
     histogramBuilder.fillPhotonLocationCategoryHistograms(channel+"_ScaleFactorWeight", findPhotonLocations(tree),scalefactor)
     histogramBuilder.fillPtAndLocationCategoryHistograms(channel+"_ScaleFactorWeight", findPhotonLocations(tree),

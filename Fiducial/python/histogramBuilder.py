@@ -63,13 +63,13 @@ def fillMultiplicityHistograms(prefix, multiplicity, weight=1, bins=20, xmin=0, 
     Histograms[key].Fill(multiplicity, weight)
 
 # Function to Create and Fill Pt Histograms
-def fillPtHistograms(prefix, pt, bins=400, xmin=0, xmax=200):
+def fillPtHistograms(prefix, pt, weight=1, bins=400, xmin=0, xmax=200):
     key = prefix+"_Pt"
     if not key in Histograms:
         Histograms[key] = TH1F(key,key, bins, xmin, xmax)
-        Histograms[key].GetYaxis().SetTitle("Pt (GeV)")
+        Histograms[key].GetXaxis().SetTitle("Pt (GeV)")
         Histograms[key].Sumw2()
-    Histograms[key].Fill(pt)
+    Histograms[key].Fill(pt, weight)
 
 # Function To Create and Fill Eta Histograms
 def fillEtaHistograms(prefix, eta, bins=120, xmin=-3, xmax=3):
