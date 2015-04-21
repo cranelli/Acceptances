@@ -3,6 +3,7 @@
 # channels and our different categories.
 # 
 # Example execution from command line:
+# python MakeRecoPDFReweightCategoryHistograms.py /data/users/cranelli/WGamGam/Acceptances/AnalysisRECOCuts_Skim/LepGammaGammaFinalEl_2015_03_31_ScaleFactors_PDFReweights/job_summer12_WAA_ISR/tree.root test.root
 #
 
 
@@ -28,8 +29,10 @@ outFileDir="../test/"
 pdf_names=['cteq6l1', 'MSTW2008lo68cl', 'cteq66'] #cteq6l1 is the original
 orig_pdf_name = pdf_names[0]
 
+#Eigenvector PDF Reweighting
+eigenvector_pdf_name=pdf_names[2]
 
-def MakeRecoPDFReweightCategoryHistograms(inFileLoc="ggTree_mc_ISR.root", outFileName="test.root"):
+def MakeRecoPDFReweightCategoryHistograms(inFileLoc="", outFileName="test.root"):
 
     # In File, Out File, and Tree
     inFile = TFile(inFileLoc)
@@ -77,18 +80,32 @@ def MakeRecoPDFReweightCategoryHistograms(inFileLoc="ggTree_mc_ISR.root", outFil
                 scalefactor = tree.mu_trigSF*tree.mu_isoSF*tree.mu_idSF*tree.ph_idSF*tree.PUWeight
                 weight =pdf_reweight*scalefactor
                 MakeHistograms(tree, channel, weight)
-
             # if(not isElectronChannel and not isMuonChannel):
+
+        # Calculate Eigenvector PDF Reweight
+        # Loop Over each Eigenvector element in the xfx vector.
+        for eigenvector_index in range(0, xfx_pair_dict[eigenvector_pdf_name][0].size()):
+            eigenvector_reweight = calcPDFEigenvectorReweight(xfx_pair_dict, eigenvector_pdf_name, eigenvector_index)
+            if(isElectronChannel):
+                channel="ElectronChannel_"+eigenvector_pdf_name+"_"+str(eigenvector_index)+"_PDFReweight"
+                scalefactor = tree.el_trigSF*tree.ph_idSF*tree.ph_evetoSF*tree.PUWeight
+                weight = eigenvector_reweight*scalefactor
+                MakeHistograms(tree, channel, weight)
+            if(isMuonChannel):
+                channel="MuonChannel_"+eigenvector_pdf_name+"_"+str(eigenvector_index)+"_PDFReweight"
+                scalefactor = tree.mu_trigSF*tree.mu_isoSF*tree.mu_idSF*tree.ph_idSF*tree.PUWeight
+                weight =eigenvector_reweight*scalefactor
+                MakeHistograms(tree, channel, weight)
             
     outFile.Write()
 
 def MakeHistograms(tree, channel, weight):
     
-    histogramBuilder.fillCountHistograms(channel)
-    #histogramBuilder.fillCountHistograms(channel+"_ScaleFactorWeight", weight)
+    histogramBuilder.fillCountHistograms(channel+"_unweighted")
+    histogramBuilder.fillCountHistograms(channel+"_weighted", weight)
     #histogramBuilder.fillScaleFactorHistograms("ScaleFactors_"+channel, weight)
-    histogramBuilder.fillPtHistograms(channel+"_ScaleFactorWeight", tree.pt_leadph12, weight)
-    histogramBuilder.fillPtCategoryHistograms(channel+"_ScaleFactorWeight", tree.pt_leadph12, weight)
+    histogramBuilder.fillPtHistograms(channel+"_weighted", tree.pt_leadph12, weight)
+    histogramBuilder.fillPtCategoryHistograms(channel+"_weighted", tree.pt_leadph12, weight)
     #histogramBuilder.fillPhotonLocationCategoryHistograms(channel+"_ScaleFactorWeight", findPhotonLocations(tree),weight)
     #histogramBuilder.fillPtAndLocationCategoryHistograms(channel+"_ScaleFactorWeight", findPhotonLocations(tree),
     #                                                     tree.pt_leadph12, weight)
@@ -113,6 +130,22 @@ def calcPDFReweight(xfx_pair_dict, orig_pdf_name, pdf_name):
     
     reweight = (new_central_xfx_first * new_central_xfx_second) / (orig_central_xfx_first*orig_central_xfx_second)
     return reweight
+
+#Calculate Reweighting from central value of a set, to up-down eigenvector values of the set.  
+def calcPDFEigenvectorReweight(xfx_pair_dict, eigenvector_pdf_name, eigenvector_index):
+    eigenvector_reweight =1;
+    
+    # Central Value is the 0 index in the vector
+    xfx_first = xfx_pair_dict[eigenvector_pdf_name][0]
+    xfx_second = xfx_pair_dict[eigenvector_pdf_name][1]
+    central_xfx_first = xfx_first[0]
+    central_xfx_second = xfx_second[0]
+    
+    eigenvector_xfx_first = xfx_first[eigenvector_index]
+    eigenvector_xfx_second = xfx_second[eigenvector_index]
+    
+    eigenvector_reweight = (eigenvector_xfx_first * eigenvector_xfx_second) / (central_xfx_first*central_xfx_second)
+    return eigenvector_reweight
 
 
 #Separate Lead and Sub Lead Photons between Barrel and EndCap.

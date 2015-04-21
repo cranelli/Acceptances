@@ -7,15 +7,7 @@
 from ROOT import TLorentzVector
 
 import CommonFiducialCutValues
-
-# Particle Number
-#reqNumPhotons = CommonFiducialCutValues.NUM_CANDIDATE_PHOTONS
-#reqNumLeptons = CommonFiducialCutValues.NUM_CANDIDATE_LEPTONS
-
-# Delta R
-#minPhotonPhotonDeltaR = CommonFiducialCutValues.PHOTON_PHOTON_DR
-#minPhotonElectronDeltaR = CommonFiducialCutValues.PHOTON_ELECTRON_DR
-#minPhotonMuonDeltaR = CommonFiducialCutValues.PHOTON_MUON_DR
+from math import sqrt, cos
 
 zMass = 91.2
 
@@ -46,6 +38,18 @@ def passPhotonLeptonDeltaR(photons, leptons, minPhotonLeptonDeltaR):
     # Only if all pairings pass
     return True
 
+def passMt(leptons, neutrinos, minMt):
+    summed_nu=TLorentzVector()
+    for nu in neutrinos:
+        summed_nu += nu
+        
+    for lepton in leptons:
+        Mt2 = 2*lepton.Et()*summed_nu.Et()*(1-cos(lepton.DeltaPhi(summed_nu)))
+        Mt = sqrt(Mt2)
+        if Mt < minMt: return False
+
+    return True
+    
 # Reject Event if Photon and Electron are too close
 #def passPhotonElectronDeltaR(photons, electrons):
 #    for photon in photons:

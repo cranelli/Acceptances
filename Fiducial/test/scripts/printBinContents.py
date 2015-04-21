@@ -6,8 +6,9 @@ from ROOT import TFile
 from ROOT import TH1F
 #from decimal import getcontext
 
-fileLoc ="../Acceptances.root"
-histName="MuonChannel_Acceptances_ScaleFactorWeight_Category_PtAndLocation"
+#fileLoc ="../Acceptances.root"
+fileLoc ="../Acceptances_PDFReweights.root"
+#histName="MuonChannel_Acceptances_ScaleFactorWeight_Category_PtAndLocation"
 #histName="Category_PtAndLocation_Acceptances_ElectronChannel"
 #histName="Acceptances"
 

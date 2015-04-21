@@ -3,13 +3,14 @@
 # channels and our different categories.
 # 
 # Example execution from command line:
-#python MakeRecoCategoryHistograms.py ../test/AnalysisRecoCuts_ScaleFactors_Wgg_FSR.root AnalysisRecoCuts_ScaleFactors_Wgg_FSR_CategoryHistograms.root
+#
 
 
 import sys
 
 from ROOT import TFile
 from ROOT import TTree
+from ROOT import vector
 
 import particleIdentification
 import objectCuts
@@ -22,7 +23,6 @@ import histogramBuilder
 treeLoc="ggNtuplizer/EventTree"
 
 outFileDir="../test/"
-
 
 def MakeRecoCategoryHistograms(inFileLoc="ggTree_mc_ISR.root", outFileName="test.root"):
 
@@ -42,6 +42,12 @@ def MakeRecoCategoryHistograms(inFileLoc="ggTree_mc_ISR.root", outFileName="test
         scalefactor =1;
         isElectronChannel=(tree.el_passtrig_n> 0 and tree.el_n==1 and tree.mu_n==0)
         isMuonChannel=(tree.mu_passtrig25_n>0 and tree.mu_n==1 and tree.el_n==0)
+
+        # From changing the triggers requirements, to see effect of lepton Pt Cut, on
+        #lead photon dependence of the Acceptances.
+        #isElectronChannel=(tree.el_n==1 and tree.mu_n==0)
+        #isMuonChannel=(tree.mu_passtrig_n>0 and tree.mu_n==1 and tree.el_n==0)
+        
         if(isElectronChannel):
             channel="ElectronChannel"
             scalefactor = tree.el_trigSF*tree.ph_idSF*tree.ph_evetoSF*tree.PUWeight
@@ -61,46 +67,39 @@ def MakeHistograms(tree, channel, scalefactor):
     histogramBuilder.fillCountHistograms(channel+"_ScaleFactorWeight", scalefactor)
     histogramBuilder.fillScaleFactorHistograms("ScaleFactors_"+channel, scalefactor)
     histogramBuilder.fillPtHistograms(channel+"_ScaleFactorWeight", tree.pt_leadph12, scalefactor)
+
+    #Vector of Electron Transverse Momenta, ordered by lead Pt.
+    electron_pt = vector('float')()
+    electron_pt = tree.el_pt
+    if electron_pt.size() > 0 :
+        #print "Lead Electron Pt: ", tree.el_pt[0]
+        histogramBuilder.fillPtHistograms(channel+"_ScaleFactorWeight_Electron", electron_pt[0], scalefactor)
+        histogramBuilder.fill2DPtHistograms(channel+"ScaleFactorWeight_ElectronAndPhoton", electron_pt[0], tree.pt_leadph12, scalefactor)
+
+    #Vector of Electron Transverse Momenta, ordered by lead Pt.
+    muon_pt = vector('float')()
+    muon_pt = tree.mu_pt
+    if muon_pt.size() >0 :
+        histogramBuilder.fillPtHistograms(channel+"_ScaleFactorWeight_Muon", muon_pt[0], scalefactor)
+        histogramBuilder.fill2DPtHistograms(channel+"ScaleFactorWeight_MuonAndPhoton", muon_pt[0], tree.pt_leadph12, scalefactor)
+
+    # Lead and subLead Photons
+    histogramBuilder.fillPtHistograms(channel+"_ScaleFactorWeight"+"_LeadandSubPhoton", tree.pt_leadph12, scalefactor)
+    histogramBuilder.fillPtHistograms(channel+"_ScaleFactorWeight"+"_LeadandSubPhoton", tree.pt_sublph12, scalefactor)
+    if channel == "ElectronChannel":
+        histogramBuilder.fill2DPtHistograms(channel+"ScaleFactorWeight_LeptonAndLeadSubPhoton", electron_pt[0], tree.pt_leadph12, scalefactor)
+        histogramBuilder.fill2DPtHistograms(channel+"ScaleFactorWeight_LeptonAndLeadSubPhoton", electron_pt[0], tree.pt_sublph12, scalefactor)
+    if channel == "MuonChannel":
+        histogramBuilder.fill2DPtHistograms(channel+"ScaleFactorWeight_LeptonAndLeadSubPhoton", muon_pt[0], tree.pt_leadph12, scalefactor)
+        histogramBuilder.fill2DPtHistograms(channel+"ScaleFactorWeight_LeptonAndLeadSubPhoton", muon_pt[0], tree.pt_sublph12, scalefactor)
+
+    #Category Histograms
     histogramBuilder.fillPtCategoryHistograms(channel+"_ScaleFactorWeight", tree.pt_leadph12, scalefactor)
     histogramBuilder.fillPhotonLocationCategoryHistograms(channel+"_ScaleFactorWeight", findPhotonLocations(tree),scalefactor)
     histogramBuilder.fillPtAndLocationCategoryHistograms(channel+"_ScaleFactorWeight", findPhotonLocations(tree),
                                                          tree.pt_leadph12, scalefactor)
     histogramBuilder.fillPtAndLocationCategoryHistograms(channel, findPhotonLocations(tree),
                                                          tree.pt_leadph12)
-
-
-# Generator Particle Identification Step
-    
-    #Select W's children
-#    wChildren = []
-    
-    #PdgIds
-#    electronPdgId = 11
-#    muonPdgId = 13
-#    tauPdgId = 15
-#    wPdgId = 24
-
-    #Status
-#    hardScatterStatus=3
-#    finalStateStatus=1
-
-    # Select Taus
-    # Require the Event has a Tau from a W decay,
-    # with status 3 (Hard Scatter)
-    
-#    particleIdentification.assignParticleByParentID(tree, wChildren, wPdgId)
-   
-    #for wChild in wChildren:
-     #   if abs(wChild.PID()) == tauPdgId and wChild.Status() == hardScatterStatus:
-            #histogramBuilder.fillCountHistograms("Count_TauDecay_"+channel)
-            #histogramBuilder.fillCountHistograms("Count_ScaleFactorWeight_TauDecay_"+channel, scalefactor)
-      #  if abs(wChild.PID()) == electronPdgId and wChild.Status() == finalStateStatus:
-            #histogramBuilder.fillCountHistograms("Count_ElectronDecay_"+channel)
-            #histogramBuilder.fillCountHistograms("Count_ScaleFactorWeight_ElectronDecay_"+channel, scalefactor)
-       # if abs(wChild.PID()) == muonPdgId and wChild.Status() == finalStateStatus:
-            #histogramBuilder.fillCountHistograms("Count_MuonDecay_"+channel)
-            #histogramBuilder.fillCountHistograms("Count_ScaleFactorWeight_MuonDecay_"+channel, scalefactor)
-
 
 
 #Separate Lead and Sub Lead Photons between Barrel and EndCap.

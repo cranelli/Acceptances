@@ -9,6 +9,7 @@ import sys
 
 from ROOT import TFile
 from ROOT import TTree
+from ROOT import TLorentzVector
 
 import CommonFiducialCutValues
 
@@ -19,6 +20,8 @@ import parentCuts
 
 #import histPublish
 import histogramBuilder
+from math import sqrt, cos
+
 
 origFileDir="/data/users/cranelli/WGamGam/"
 origTreeLoc="ggNtuplizer/EventTree"
@@ -33,7 +36,7 @@ reqNumPhotons = CommonFiducialCutValues.NUM_CANDIDATE_PHOTONS
 reqNumLeptons = CommonFiducialCutValues.NUM_CANDIDATE_LEPTONS
 minPhotonPhotonDeltaR = CommonFiducialCutValues.PHOTON_PHOTON_DR
 minPhotonLeptonDeltaR = CommonFiducialCutValues.PHOTON_LEPTON_DR 
-
+minMt = CommonFiducialCutValues.MIN_MT
 
 def CommonFiducialSkim(startRange=0, endRange=-1, inFileName="ggNtuples/job_summer12_LNuGG_FSR.root",
                        outFileName="test.root"):
@@ -90,12 +93,15 @@ def CommonFiducialSkim(startRange=0, endRange=-1, inFileName="ggNtuples/job_summ
         w_muons=parentCuts.selectOnParentID(muons, 24)
         tau_electrons= parentCuts.selectOnParentID(electrons, 15)
         tau_muons=parentCuts.selectOnParentID(muons, 15)
-        #if len(tau_muons) > 0: print "working"
         taus=parentCuts.selectOnParentID(taus, 24)
+        nus=nu_es + nu_ms + nu_ts
+        w_neutrinos = parentCuts.selectOnParentID(nus, 24)
+        tau_neutrinos = parentCuts.selectOnParentID(nus,15)
         electrons=w_electrons+tau_electrons
         muons=w_muons+tau_muons
         leptons=electrons+muons
-
+        neutrinos = w_neutrinos + tau_neutrinos
+        
         if not eventCuts.passReqNumParticles(photons, electrons, muons,
                                              reqNumPhotons, reqNumLeptons): continue
 
@@ -103,6 +109,8 @@ def CommonFiducialSkim(startRange=0, endRange=-1, inFileName="ggNtuples/job_summ
         if not eventCuts.passPhotonPhotonDeltaR(photons, minPhotonPhotonDeltaR): continue
         if not eventCuts.passPhotonLeptonDeltaR(photons, leptons, minPhotonLeptonDeltaR): continue
 
+        # MT Cut Lepton Neutrino(s)
+        if not eventCuts.passMt(leptons, neutrinos, minMt): continue
 
         # You have reached the end of the Cuts, congratulations!
         keepEvent=True
@@ -115,23 +123,23 @@ def CommonFiducialSkim(startRange=0, endRange=-1, inFileName="ggNtuples/job_summ
         if len(w_electrons) == reqNumLeptons:
             # Electron Photon Delta R Cut
             prefix="CommonFiducial_WDecayToElectron"
-            MakeCommonFiducialCheckHistograms(prefix, photons, electrons, muons)
+            MakeCommonFiducialCheckHistograms(prefix, photons, electrons, muons, neutrinos)
             
         # Muon Decay
         if len(w_muons) == reqNumLeptons:
             prefix="CommonFiducial_WDecayToMuon"
-            MakeCommonFiducialCheckHistograms(prefix, photons, electrons, muons)
+            MakeCommonFiducialCheckHistograms(prefix, photons, electrons, muons, neutrinos)
 
         # Tau Decay
         if len(taus) == reqNumLeptons:
             # Tau to e
             if len(tau_electrons) == reqNumLeptons:
                 prefix = "CommonFiducial_WDecayToTauToElectron"
-                MakeCommonFiducialCheckHistograms(prefix, photons, electrons, muons)
+                MakeCommonFiducialCheckHistograms(prefix, photons, electrons, muons, neutrinos)
             # Tau to mu
             if len(tau_muons) == reqNumLeptons:
                 prefix = "CommonFiducial_WDecayToTauToMuon"
-                MakeCommonFiducialCheckHistograms(prefix, photons, electrons, muons)
+                MakeCommonFiducialCheckHistograms(prefix, photons, electrons, muons, neutrinos)
         
 
     #skimTree.Print()
@@ -140,7 +148,7 @@ def CommonFiducialSkim(startRange=0, endRange=-1, inFileName="ggNtuples/job_summ
 
 
 # Make Histograms to check that the passing events are with the Common Fiducial Region.
-def MakeCommonFiducialCheckHistograms(prefix, photons, electrons, muons):
+def MakeCommonFiducialCheckHistograms(prefix, photons, electrons, muons, neutrinos):
     # Counts
     histogramBuilder.fillCountHistograms(prefix)
 
@@ -148,11 +156,16 @@ def MakeCommonFiducialCheckHistograms(prefix, photons, electrons, muons):
     MakeParticleTypeHistograms(prefix, photons, "Photons")
     MakeParticleTypeHistograms(prefix, electrons, "Electrons")
     MakeParticleTypeHistograms(prefix, muons, "Muons")
+    MakeParticleTypeHistograms(prefix, neutrinos, "Neutrinos")
 
     #dR Histograms
     MakeDeltaRHistograms(prefix, photons, photons, "Photons", "Photons")
     MakeDeltaRHistograms(prefix, photons, electrons, "Photons", "Electrons")
-    MakeDeltaRHistograms(prefix, photons, muons, "Photons", "Muons")    
+    MakeDeltaRHistograms(prefix, photons, muons, "Photons", "Muons")
+
+    #Mt Histograms
+    leptons= electrons + muons 
+    MakeMtHistograms(prefix, leptons, neutrinos)
     
 # Make histograms of the Multiplicity, Pt, Eta ...
 # of all particles of a given type.
@@ -172,8 +185,16 @@ def MakeDeltaRHistograms(prefix, particles1, particles2, particleType1, particle
         for particle2 in particles2:
             if particle1 != particle2:
                 histogramBuilder.fillDeltaRHistograms(prefix, particle1.DeltaR(particle2))
-                
 
+def MakeMtHistograms(prefix, leptons, neutrinos):
+    summed_nu=TLorentzVector()
+    for nu in neutrinos:
+        summed_nu += nu
+    histogramBuilder.fillPtHistograms(prefix+"Summed_Nu", summed_nu.Pt())
+    for lepton in leptons:
+        Mt2 = 2*lepton.Et()*summed_nu.Et()*(1-cos(lepton.DeltaPhi(summed_nu)))
+        Mt = sqrt(Mt2)
+        histogramBuilder.fillMtHistograms(prefix, Mt)
     
         
 if __name__=="__main__":
