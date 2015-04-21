@@ -6,21 +6,19 @@ from ROOT import TFile
 from ROOT import TH1F
 #from decimal import getcontext
 
-fileLoc ="../Acceptances.root"
-histName="MuonChannel_Acceptances_ScaleFactorWeight_Category_PtAndLocation"
-#histName="Category_PtAndLocation_Acceptances_ElectronChannel"
-#histName="Acceptances"
-
+fileLoc="../CommonFiducialSkim_Wgg_WeightedTotal_CategoryHistograms.root"
+#fileLoc ="../AnalysisRecoCuts_ScaleFactors_WeightedTotal_CategoryHistograms.root"
+#fileLoc ="../Acceptances.root"
 
 #fileLoc ="../AnalysisRecoCuts_ScaleFactors_WeightedTotal_CategoryHistograms.root"
 #histName="ElectronChannel_Category_PtAndLocation"
 
-outFileDir="../Tables/Acceptances"
+outFileDir="../Tables/Weighted_GEN/"
 
 
-htmlTableHeader=""" <table id="title" border="2" cellspacing="2" cellpadding="3" frame="border" rules="all" summary="summary of table"><tbody> """
-htmlTableCloser="</tbody></table></tr>"
+Header= " \n"
 
+#Loops over histograms in a file, and writes out the bin contents in table formatted txt files.
 def printBinContent():
     file = TFile(fileLoc, 'READ')
     list = file.GetListOfKeys()
@@ -34,42 +32,49 @@ def printBinContent():
             printh2BinContent(hist)
         else:
             print "This type of Class Not Supported for Printing Bin Content"
-        
-    #printh1BinContent(file, histName)
-    #printh2BinContent(file, histName, outfile)
     file.Close()
     
 
+# Writing out a 1D Histogram.  X axis is rows.
 def printh1BinContent(h1):
-    #hist = TH1F()
-    output=""
-    for i in range(1, h1.GetNbinsX()+1):
-        output = str(h1.GetBinLowEdge(i)) +" : " +str(h1.GetBinContent(i))
-        print output
-        #print h1.GetBinContent(i)
+    outfile =open(outFileDir+"BinContent_"+h1.GetName()+".dat", 'w')
+    #outfile.write(Header)
+    output=''
+    for x in range(1, h1.GetNbinsX()+1):
+        
+        output += str(h1.GetBinLowEdge(x))+ '-' + str(h1.GetBinLowEdge(x+1)) +':'
+        output += str(format(h1.GetBinContent(x), '.6f')).rjust(10)
+        output += '\n'
+    outfile.write(output)
+    outfile.close()
 
+
+# Writing out a 2D Histogram. Y Axis is row X axis is Columns
 def printh2BinContent(h2):
-    outfile =open(outFileDir+"BinContent_"+h2.GetName()+".html", 'w')
-    print "Bins Content:"
-    outfile.write(htmlTableHeader)
-    outfile.write("""<tr align="center"> """+ str(h2Name) + """</tr>""")
-    output=""
-    htmlOutput=""
+    outfile =open(outFileDir+"BinContent_"+h2.GetName()+".dat", 'w')
+    print "Bins Content of " + h2.GetName()
+    
+    outfile.write(Header)
+    
+    # Write Row with Column Values
+    colVals="".ljust(12)
+    for x in range(1, h2.GetNbinsX()+1):
+        colVals += (str(h2.GetXaxis().GetBinLowEdge(x))+ "-" + str(h2.GetXaxis().GetBinLowEdge(x+1))).rjust(10)
+    colVals += "\n"
+    outfile.write(colVals)
     
     # Loop Over Rows (Pt)
-    for j in range(1, h2.GetNbinsY()+1):
-        outfile.write("""<tr align="center">""")
+    output =""
+    for y in range(1, h2.GetNbinsY()+1):
+        output += (str(h2.GetYaxis().GetBinLowEdge(y))+ '-' + str(h2.GetYaxis().GetBinLowEdge(y+1)) +':').ljust(12)
         # Loop Over Columns (Photons' Location)
-        for i in range(1, h2.GetNbinsX()+1):
-            output = str(h2.GetXaxis().GetBinLowEdge(i))+","+str(h2.GetYaxis().GetBinLowEdge(j))+" : "+ str(format(h2.GetBinContent(i,j),'.3f'))+" pm " + str(format(h2.GetBinError(i,j),'.3f'))
-            print output
-            # Bin Content and Errors in HTML format
-            htmlOutput = """<td valign="middle">""" + str(format(h2.GetBinContent(i,j),'.3f'))+""" &plusmn """ + str(format(h2.GetBinError(i,j),'.3f'))+ """</td>""" 
-            outfile.write(htmlOutput)
-            
-        outfile.write("""</tr>""")
-            
-    outfile.write(htmlTableCloser)
+        for x in range(1, h2.GetNbinsX()+1):
+            output += str(format(h2.GetBinContent(x,y), '.4f').rjust(10))
+        
+        output += '\n'
+
+
+    outfile.write(output)
     outfile.close()
     
                                                                                                  

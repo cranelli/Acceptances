@@ -12,11 +12,11 @@ file1Loc = "../AnalysisRecoCuts_ScaleFactors_WeightedTotal_CategoryHistograms.ro
 file2Loc= "../CommonFiducialSkim_Wgg_WeightedTotal_CategoryHistograms.root"
 outFileLoc= "../Acceptances.root"
 
-numerators=["ScaleFactorWeight_Count", "ScaleFactorWeight_Category_PtAndLocation"]
+numerators=["ScaleFactorWeight_Count", "ScaleFactorWeight_Category_Pt", "ScaleFactorWeight_Category_PtAndLocation"]
 channels=["MuonChannel", "ElectronChannel"]
-sfs=[["mu_TrigSFUP", "mu_TrigSFDN", "ph_idSFUP", "ph_idSFDN"],
+sfs=[["mu_TrigSFUP", "mu_TrigSFDN", "mu_isoSFUP", "mu_isoSFDN", "mu_idSFUP", "mu_idSFDN", "ph_idSFUP", "ph_idSFDN"],
     ["el_TrigSFUP", "el_TrigSFDN", "ph_idSFUP", "ph_idSFDN", "ph_evetoSFUP", "ph_evetoSFDN"]]
-denominators=["Count", "Category_PtAndLocation"]
+denominators=["Count", "Category_Pt","Category_PtAndLocation"]
 decays=["MuonDecay", "ElectronDecay"]
 #hist1Name="Category_PtAndLocation_MuonChannel"
 #hist2Name="Category_PtAndLocation_MuonDecay"

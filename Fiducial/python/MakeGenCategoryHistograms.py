@@ -82,7 +82,7 @@ def MakeRecoCategoryHistograms(inFileName="job_summer12_WAA_ISR/ggtree_mc_ISR_Co
 def MakeHistograms(tree, decay, photons):
     histogramBuilder.fillCountHistograms(decay)
     leadPhoton = selectLead(photons)
-    histogramBuilder.fillPtCategoryHistograms("Category_LeadPhotonPt_"+decay, leadPhoton.Pt())
+    histogramBuilder.fillPtCategoryHistograms(decay, leadPhoton.Pt())
     histogramBuilder.fillPhotonLocationCategoryHistograms(decay, findPhotonLocations(photons))
     histogramBuilder.fillPtAndLocationCategoryHistograms(decay, findPhotonLocations(photons), leadPhoton.Pt())
     

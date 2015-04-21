@@ -74,6 +74,18 @@ def MakeRecoCategoryHistograms(inFileName="ggTree_mc_ISR.root", outFileName="tes
             channel="MuonChannel_mu_TrigSFDN"
             scalefactor = tree.mu_trigSFDN*tree.mu_isoSF*tree.mu_idSF*tree.ph_idSF*tree.PUWeight
             MakeHistograms(tree, channel, scalefactor)
+            channel="MuonChannel_mu_isoSFUP"
+            scalefactor = tree.mu_trigSF*tree.mu_isoSFUP*tree.mu_idSF*tree.ph_idSF*tree.PUWeight
+            MakeHistograms(tree, channel, scalefactor)
+            channel="MuonChannel_mu_isoSFDN"
+            scalefactor = tree.mu_trigSF*tree.mu_isoSFDN*tree.mu_idSF*tree.ph_idSF*tree.PUWeight
+            MakeHistograms(tree, channel, scalefactor)
+            channel="MuonChannel_mu_idSFUP"
+            scalefactor = tree.mu_trigSF*tree.mu_isoSF*tree.mu_idSFUP*tree.ph_idSF*tree.PUWeight
+            MakeHistograms(tree, channel, scalefactor)
+            channel="MuonChannel_mu_idSFDN"
+            scalefactor = tree.mu_trigSF*tree.mu_isoSF*tree.mu_idSFDN*tree.ph_idSF*tree.PUWeight
+            MakeHistograms(tree, channel, scalefactor)
             channel="MuonChannel_ph_idSFUP"
             scalefactor = tree.mu_trigSF*tree.mu_isoSF*tree.mu_idSF*tree.ph_idSFUP*tree.PUWeight
             MakeHistograms(tree, channel, scalefactor)
@@ -90,7 +102,9 @@ def MakeHistograms(tree, channel, scalefactor):
     histogramBuilder.fillCountHistograms(channel)
     histogramBuilder.fillCountHistograms(channel+"_ScaleFactorWeight", scalefactor)
     histogramBuilder.fillScaleFactorHistograms("ScaleFactors_"+channel, scalefactor)
+    histogramBuilder.fillPtCategoryHistograms(channel, tree.pt_leadph12)
     histogramBuilder.fillPtCategoryHistograms(channel+"_ScaleFactorWeight", tree.pt_leadph12, scalefactor)
+    histogramBuilder.fillPhotonLocationCategoryHistograms(channel, findPhotonLocations(tree))
     histogramBuilder.fillPhotonLocationCategoryHistograms(channel+"_ScaleFactorWeight", findPhotonLocations(tree),scalefactor)
     histogramBuilder.fillPtAndLocationCategoryHistograms(channel+"_ScaleFactorWeight", findPhotonLocations(tree),
                                                          tree.pt_leadph12, scalefactor)

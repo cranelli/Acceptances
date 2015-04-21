@@ -9,11 +9,10 @@ from ROOT import TH1F
 fileLoc ="../Acceptances.root"
 channels=["MuonChannel_ScaleFactorWeight", "ElectronChannel_ScaleFactorWeight"]
 histTypes=["Category_PtAndLocation"]
-outFileDir="../Tables/Systematics/"
 
-htmlTableHeader=""" <table id="title" border="2" cellspacing="2" cellpadding="3" frame="border" rules="all" summary="summary of table"><tbody> """
-htmlTableCloser="</tbody></table></tr>"
+outFileDir="../Tables/Acceptances_SystErrors/"
 
+Header= " \n"
 
 def printSystematics():
     file = TFile(fileLoc, 'READ')
@@ -24,6 +23,9 @@ def printSystematics():
             # Select Histogram with Expected Values
             expectedHist = file.Get(channel+"_"+histType+"_Acceptances")
             print expectedHist.GetName()
+            outfileUP =open(outFileDir+"SystErrorsUP_"+expectedHist.GetName()+".dat", 'w')
+            outfileDN =open(outFileDir+"SystErrorsDN_"+expectedHist.GetName()+".dat", 'w')
+            # Store the Difference Systematics Together in a Dictionairy
             differencesUP=dict()
             differencesDN=dict()
             # Loop Over Histograms with modified Scale Factor Values
@@ -36,27 +38,36 @@ def printSystematics():
                         # Histogram Names
                         printh1BinDifference(hist, expectedHist)
                     elif hist.ClassName() == "TH2F":
-                        printh2BinDifference(hist, expectedHist)
+                        #printh2BinDifference(hist, expectedHist)
                         if "UP" in histName:
                             differencesUP[histName]=h2CalcDifferences(hist, expectedHist)
                         elif "DN" in histName:
                             differencesDN[histName]=h2CalcDifferences(hist, expectedHist)
                     else:
                         print "This type of Class Not Supported for Printing Bin Content"
-            print "Differences Up"
+            #Differences Up
+            outputUP=""
             for key in differencesUP:
                 print key
-                print differencesUP[key]
-            print "sumInQuadrature:"
-            print sumInQuadrature(differencesUP)
-            print "Differences Down"
+            # print differencesUP[key]
+            systematicsUP= sumInQuadrature(differencesUP)
+            for systematicUP in systematicsUP:
+                outputUP+=str(format(systematicUP, '.6f')).rjust(10)
+            outfileUP.write(outputUP)
+            # print sumInQuadrature(differencesUP)
+            
+            # Differences Down
+            outputDN=""
             for key in differencesDN:
                 print key
-                print differencesDN[key]
-            print "sumInQuadrature:"
-            print sumInQuadrature(differencesDN)
-    #printh1BinContent(file, histName)
-    #printh2BinContent(file, histName, outfile)
+            #    print differencesDN[key]
+            systematicsDN= sumInQuadrature(differencesDN)
+            for systematicDN in systematicsDN:
+                outputDN+=str(format(systematicDN, '.6f')).rjust(10)
+            outfileDN.write(outputDN)
+            # print sumInQuadrature(differencesDN)
+            outfileUP.close()
+            outfileDN.close()
     file.Close()
 
 # Sum the differences, for each list of differences in the Dictionairy. 
