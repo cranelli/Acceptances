@@ -1,5 +1,5 @@
-#Python Code for looking at the Histograms in a root
-#file, and printing the content of each bin.
+#Python Code for weighting and summing  all
+# the Histograms from two root files.
 
 import sys
 

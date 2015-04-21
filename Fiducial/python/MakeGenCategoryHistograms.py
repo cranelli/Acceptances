@@ -1,7 +1,7 @@
 # Python Code for making Histograms
 # from the Common Fiducial Skim
 # Example execution from command line:
-# python MakeGenCategoryHistograms.py job_summer12_WAA_ISR/ggtree_mc_ISR_CommonFiducialSkim.root CommonFiducialSkim_WAA_ISR_CategoryHistograms.root
+# python MakeGenCategoryHistograms.py /data/users/cranelli/WGamGam/Acceptances/CommonFiducial_Skim/ggNtuples_Skim/job_summer12_WAA_ISR/ggtree_mc_ISR_CommonFiducialSkim.root CommonFiducialSkim_WAA_ISR_CategoryHistograms.root
 
 import sys
 
@@ -15,7 +15,7 @@ import parentCuts
 
 import histogramBuilder
 
-origFileDir="/data/users/cranelli/WGamGam/Acceptances/CommonFiducial_Skim/ggNtuples_Skim/"
+#origFileDir="/data/users/cranelli/WGamGam/Acceptances/CommonFiducial_Skim/ggNtuples_Skim/"
 treeLoc="ggNtuplizer/EventTree"
 
 outFileDir="../test/"
@@ -37,10 +37,10 @@ hardScatterStatus=3
 minPhotonPt = CommonFiducialCutValues.PHOTON_CANDIDATE_MIN_PT
 maxPhotonEta = CommonFiducialCutValues.PHOTON_CANDIDATE_MAX_ETA
 
-def MakeRecoCategoryHistograms(inFileName="job_summer12_WAA_ISR/ggtree_mc_ISR_CommonFiducialSkim.root",
+def MakeGenCategoryHistograms(inFileLoc="job_summer12_WAA_ISR/ggtree_mc_ISR_CommonFiducialSkim.root",
                                outFileName="test.root"):
     # Original File
-    origFile = TFile(origFileDir+inFileName)
+    origFile = TFile(inFileLoc)
     tree = origFile.Get(treeLoc)
     # New File
     outFile = TFile(outFileDir + outFileName, "RECREATE")
@@ -82,6 +82,7 @@ def MakeRecoCategoryHistograms(inFileName="job_summer12_WAA_ISR/ggtree_mc_ISR_Co
 def MakeHistograms(tree, decay, photons):
     histogramBuilder.fillCountHistograms(decay)
     leadPhoton = selectLead(photons)
+    histogramBuilder.fillPtHistograms(decay, leadPhoton.Pt())
     histogramBuilder.fillPtCategoryHistograms(decay, leadPhoton.Pt())
     histogramBuilder.fillPhotonLocationCategoryHistograms(decay, findPhotonLocations(photons))
     histogramBuilder.fillPtAndLocationCategoryHistograms(decay, findPhotonLocations(photons), leadPhoton.Pt())
@@ -104,7 +105,7 @@ def findPhotonLocations(photons):
     #Lead in EndCap Sub in Barrel
     if abs(photonLead.Eta()) >endCapMinEta and abs(photonSubLead.Eta()) < barrelMaxEta:
         return 2
-   
+
     #if(tree.isEE_leadph12 and tree.isEE_sublph12):
     return 3
 
@@ -142,5 +143,5 @@ def selectSubLead(particles):
     return subLead
 
 if __name__=="__main__":
-        MakeRecoCategoryHistograms(sys.argv[1], sys.argv[2])
+        MakeGenCategoryHistograms(sys.argv[1], sys.argv[2])
     

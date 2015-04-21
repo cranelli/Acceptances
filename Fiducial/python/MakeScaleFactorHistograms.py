@@ -1,36 +1,35 @@
-# Python Code for Skimming a root file, and making a new root file,
-# where only events from W decays to a tau are included.
+# Python Code for Histograming events based on their
+# RECO values.  Splits signal events between the different
+# channels and our different categories.
+# 
 # Example execution from command line:
-# python TauSkim.py startRange endRange inFile outFile
+#python MakeScaleFactorHistograms.py AnalysisRecoCuts_ScaleFactors_Wgg_FSR.root Wgg_FSR_ScaleFactorHistograms.root
+
 
 import sys
 
 from ROOT import TFile
 from ROOT import TTree
 
-#import particleIdentification
-#import objectCuts
-#import eventCuts
-#import parentCuts
+import particleIdentification
+import objectCuts
+import eventCuts
+import parentCuts
 
 import histogramBuilder
 
-origFileDir="/home/cranelli/WGamGam/Acceptances/CMSSW_5_3_12/src/Acceptances/Fiducial/test/"
+inFileDir="../test/RootFiles/"
 treeLoc="ggNtuplizer/EventTree"
 
-outFileDir="/home/cranelli/WGamGam/Acceptances/CMSSW_5_3_12/src/Acceptances/Fiducial/test/"
-#newFileLoc="ggtree_ISR_Tau.root"
+outFileDir="../test/"
 
-#histDirLoc = 'histOutput/'
 
 def MakeScaleFactorHistograms(inFileName="ggTree_mc_ISR.root", outFileName="test.root"):
-    # Original File
-    origFile = TFile(origFileDir+inFileName)
-    tree = origFile.Get(treeLoc)
-    # New File
+
+    # In File, Out File, and Tree
+    inFile = TFile(inFileDir+inFileName)
+    tree = inFile.Get(treeLoc)
     outFile = TFile(outFileDir + outFileName, "RECREATE")
-    #outTreeDirectory = outFile.mkdir("ggNtuplizer")
-    #outTreeDirectory.cd()
     
     nentries = tree.GetEntries()
     print "Number of Entries", nentries
@@ -41,32 +40,40 @@ def MakeScaleFactorHistograms(inFileName="ggTree_mc_ISR.root", outFileName="test
 
         #Calculate Weight Using Scale Factors
         scalefactor =1;
-        if(tree.el_passtrig_n>0 and tree.el_n==1 and tree.mu_n==0):
+        isElectronChannel=(tree.el_passtrig_n> 0 and tree.el_n==1 and tree.mu_n==0)
+        isMuonChannel=(tree.mu_passtrig25_n>0 and tree.mu_n==1 and tree.el_n==0)
+        if(isElectronChannel):
             channel="ElectronChannel"
-            histogramBuilder.fillScaleFactorHistograms("EleTrigSF_"+channel, tree.el_trigSF)
-            histogramBuilder.fillScaleFactorHistograms("PhoIDSF_"+channel, tree.ph_idSF)
-            histogramBuilder.fillScaleFactorHistograms("PhoEVetoSF_"+channel, tree.ph_evetoSF)
-            histogramBuilder.fillScaleFactorHistograms("PUWeight_"+channel, tree.PUWeight)
-            totalscalefactor = tree.el_trigSF*tree.ph_idSF*tree.ph_evetoSF*tree.PUWeight
-            histogramBuilder.fillScaleFactorHistograms("TotalSF_"+channel, totalscalefactor)
-            #MakeHistograms(tree, channel, scalefactor)
-        if(tree.mu_passtrig25_n > 0 and tree.mu_n==1 and tree.el_n==0):
+            scalefactor = tree.el_trigSF*tree.ph_idSF*tree.ph_evetoSF*tree.PUWeight
+            MakeHistograms(tree, channel, scalefactor)
+            # Separate by Lead Photon Pt
+            if tree.pt_leadph12 > 15.0 and tree.pt_leadph12 < 25.0:
+                channel+="_LeadPhotonPt15_25"
+                MakeHistograms(tree, channel, scalefactor)
+            if tree.pt_leadph12 > 25.0 and tree.pt_leadph12 < 40.0:
+                channel+="_LeadPhotonPt25_40"
+                MakeHistograms(tree, channel, scalefactor)
+            if tree.pt_leadph12 > 40.0 and tree.pt_leadph12 < 70.0:
+                channel+="_LeadPhotonPt40_70"
+                MakeHistograms(tree, channel, scalefactor)
+            if tree.pt_leadph12 > 70.0:
+                channel+="_LeadPhotonPt70"
+                MakeHistograms(tree, channel, scalefactor)
+            
+        if(isMuonChannel):
             channel="MuonChannel"
-            histogramBuilder.fillScaleFactorHistograms("MuTrigSF_"+channel, tree.mu_trigSF)
-            histogramBuilder.fillScaleFactorHistograms("MuIsoSF_"+channel, tree.mu_isoSF)
-            histogramBuilder.fillScaleFactorHistograms("MuIdSF_"+channel, tree.mu_idSF)
-            histogramBuilder.fillScaleFactorHistograms("PhoIDSF_"+channel, tree.ph_idSF)
-            histogramBuilder.fillScaleFactorHistograms("PUWeight_"+channel, tree.PUWeight)
-            totalscalefactor = tree.mu_trigSF*tree.mu_isoSF*tree.mu_idSF*tree.ph_idSF*tree.PUWeight
-            histogramBuilder.fillScaleFactorHistograms("TotalSF_"+channel, totalscalefactor)
-            #MakeHistograms(tree, channel, scalefactor)
-        #if(tree.mu_passtrig25_n==1 and tree.el_passtrig_n==1):
-        #    channel="ElectronAndMuonChannel"
-        #    totalscalefactor = tree.el_trigSF*tree.ph_idSF*tree.ph_evetoSF*tree.mu_trigSF*tree.mu_isoSF*tree.PUWeight
-        #    histogramBuilder.fillScaleFactorHistograms("TotalSF_"+channel, totalscalefactor)
-            #MakeHistograms(tree, channel, scalefactor)
-        #print scalefactor
+            scalefactor = tree.mu_trigSF*tree.mu_isoSF*tree.mu_idSF*tree.ph_idSF*tree.PUWeight
+            MakeHistograms(tree, channel, scalefactor)
+
+        #if(not isElectronChannel and not isMuonChannel):
+            
     outFile.Write()
+
+def MakeHistograms(tree, channel, scalefactor):
+    histogramBuilder.fillScaleFactorHistograms("ScaleFactors_"+channel, scalefactor)
+
+
+    
 
 if __name__=="__main__":
         MakeScaleFactorHistograms(sys.argv[1], sys.argv[2])
