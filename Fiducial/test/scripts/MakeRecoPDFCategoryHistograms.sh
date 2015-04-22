@@ -41,8 +41,8 @@ cd ../test/scripts
 #echo $OUT_FSR | sed 's/FSR/WeightedTotal/'
 OUT_WEIGHTED=$(echo $OUT_FSR | sed 's/FSR/WeightedTotal/')
 #echo $OUT_WEIGHTED
-echo python weightAndAddHistograms.py ../$OUT_ISR ../$OUT_FSR ../$OUT_WEIGHTED
-python weightAndAddHistograms.py ../$OUT_ISR ../$OUT_FSR ../$OUT_WEIGHTED
+echo python weightAndAddHistograms.py ../Histograms/$OUT_ISR ../Histograms/$OUT_FSR ../Histograms/$OUT_WEIGHTED
+python weightAndAddHistograms.py ../Histograms/$OUT_ISR ../Histograms/$OUT_FSR ../Histograms/$OUT_WEIGHTED
 
 
 

@@ -1,7 +1,8 @@
-# Python Code for making Histograms
-# from the Common Fiducial Skim
+# Python Code for making Generator Info Histograms
+# Includes options for PDF reweighting.
+# Expected to run on root files, that have been through the Common Fiducial Skim
 # Example execution from command line:
-
+# python MakeGenPDFReweightCategoryHistograms.py /data/users/cranelli/WGamGam/Acceptances/CommonFiducial_wMT_Skim_PDFReweights/job_summer12_WAA_ISR/tree.root test.root
 
 import sys
 
@@ -13,119 +14,138 @@ import CommonFiducialCutValues
 import particleIdentification
 import objectCuts
 import parentCuts
-
 import histogramBuilder
 
-#origFileDir="/data/users/cranelli/WGamGam/Acceptances/CommonFiducial_Skim/ggNtuples_Skim/"
-treeLoc="EventTree"
+# Define Global Variables
 
-outFileDir="../test/"
+TREELOC="EventTree"
+OUTDIR="../test/Histograms/"
+
+# Standard Histograms (No Reweighting)
+DO_NO_REWEIGHT=True
 
 #Central PDF Reweighting
-pdf_names=['cteq6l1', 'MSTW2008lo68cl', 'cteq66'] #cteq6l1 is the original
-orig_pdf_name = pdf_names[0]
+DO_CENTRAL_PDF_REWEIGHT=True
+PDF_NAMES=['cteq6l1', 'MSTW2008lo68cl', 'cteq66'] #cteq6l1 is the original
+ORIG_PDF_NAME = 'cteq6l1'
 
 #Eigenvector PDF Reweighting
-eigenvector_pdf_name=pdf_names[2]
+DO_EIGENVECTOR_PDF_REWEIGHT=True
+EIGENVECTOR_PDF_NAME= 'cteq66'
 
 # PdgIds
-electronPdgId = 11
-muonPdgId = 13
-tauPdgId = 15
-photonPdgId = 22
-wPdgId = 24
+ELECTRON_PDGID = 11
+MUON_PDGID = 13
+TAU_PDGID = 15
+PHOTON_PDGID = 22
+W_PDGID = 24
+
 # Statuses
-finalStateStatus=1
-hardScatterStatus=3
-#Object Cut Values
+FINAL_STATE_STATUS=1
+HARD_SCATTER_STATUS=3
+
+#Photon Cut Values
 minPhotonPt = CommonFiducialCutValues.PHOTON_CANDIDATE_MIN_PT
 maxPhotonEta = CommonFiducialCutValues.PHOTON_CANDIDATE_MAX_ETA
 
+# Makes Gen Histograms
 def MakeGenPDFReweightCategoryHistograms(inFileLoc="job_summer12_WAA_ISR/ggtree_mc_ISR_CommonFiducialSkim.root",
                                          outFileName="test.root"):
     # Original File
     origFile = TFile(inFileLoc)
-    tree = origFile.Get(treeLoc)
+    tree = origFile.Get(TREELOC)
     # New File
-    outFile = TFile(outFileDir + outFileName, "RECREATE")
+    outFile = TFile(OUTDIR + outFileName, "RECREATE")
     
     nentries = tree.GetEntries()
     print "Number of Entries", nentries
 
-
-    # Create a dictionairy (map) to store the addresses of the xfx pairs
-    # for each PDF set.
-    xfx_pair_dict = {}
-    for pdf_name in pdf_names:
-        print pdf_name
-        xfx_pair_dict[pdf_name] = [vector('double')(), vector('double')()]
-        tree.SetBranchAddress('xfx_first_'+pdf_name, xfx_pair_dict[pdf_name][0])
-        tree.SetBranchAddress('xfx_second_'+pdf_name, xfx_pair_dict[pdf_name][1])
+    # Holder for PDF Pair Information
+    xfx_pair_dict = GetPDFPairInfo(tree)
         
     # Loop Over Events
     for i in range(0, nentries):
         if(i%1000==0): print i
         tree.GetEntry(i)
 
-        # Select Particles with a W Parent
-        wChildren = []
-        particleIdentification.assignParticleByParentID(tree, wChildren, wPdgId)
-                                                        
-        # Select and Make Object Cuts on Photons
-        photons = []
-        particleIdentification.assignParticleByID(tree, photons, photonPdgId)
-        photons= objectCuts.selectOnStatus(photons, 1)
-        photons=objectCuts.selectOnPtEta(photons, minPhotonPt, maxPhotonEta)
-        photons=parentCuts.selectOnPhotonParentage(photons)
+        # Select Particles, those with a W Parent and Photons
+        wChildren = SelectWChildren(tree)
+        photons = SelectPhotons(tree)
+        
+        # Make Regular Histograms (No Reweighting)
+        if DO_NO_REWEIGHT:
+            MakeNoReweightHistograms(wChildren, photons)
 
         # Calculate Central PDF Reweight
-        for pdf_name in pdf_names:
-            reweight = calcPDFReweight(xfx_pair_dict, orig_pdf_name, pdf_name)
-            
-            # Select Decay Type
-            for wChild in wChildren: 
-            
-                # Electron Decay
-                if(abs(wChild.PID()) == electronPdgId and wChild.Status() == finalStateStatus):
-                    decay="ElectronDecay_" + pdf_name+"_PDFReweight"
-                    MakeHistograms(tree, decay, photons, reweight)
-                if(abs(wChild.PID()) == muonPdgId and wChild.Status() == finalStateStatus):
-                    decay="MuonDecay_"+ pdf_name + "_PDFReweight"
-                    MakeHistograms(tree, decay, photons, reweight)
-                if(abs(wChild.PID()) == tauPdgId and wChild.Status() == hardScatterStatus):
-                    decay="TauDecay_"+ pdf_name + "_PDFReweight"
-                    MakeHistograms(tree, decay, photons, reweight)
-
-        # Calculate Eigenvector PDF Reweight
-        # Loop Over each Eigenvector element in the xfx vector.
-        for eigenvector_index in range(0, xfx_pair_dict[eigenvector_pdf_name][0].size()):
-            eigenvector_reweight = calcPDFEigenvectorReweight(xfx_pair_dict, eigenvector_pdf_name, eigenvector_index)
-            
-            # Select Decay Type
-            for wChild in wChildren: 
-                # Electron Decay
-                if(abs(wChild.PID()) == electronPdgId and wChild.Status() == finalStateStatus):
-                    decay="ElectronDecay_" + eigenvector_pdf_name+"_"+str(eigenvector_index)+"_PDFEigenvectorReweight"
-                    MakeHistograms(tree, decay, photons, eigenvector_reweight)
-                if(abs(wChild.PID()) == muonPdgId and wChild.Status() == finalStateStatus):
-                    decay="MuonDecay_"+ eigenvector_pdf_name +"_"+str(eigenvector_index)+"_PDFEigenvectorReweight"
-                    MakeHistograms(tree, decay, photons, eigenvector_reweight)
-                if(abs(wChild.PID()) == tauPdgId and wChild.Status() == hardScatterStatus):
-                    decay="TauDecay_"+ eigenvector_pdf_name + "_"+str(eigenvector_index)+"_PDFEigenvectorReweight"
-                    MakeHistograms(tree, decay, photons, eigenvector_reweight)
+        if DO_CENTRAL_PDF_REWEIGHT:
+            MakeCentralPDFReweightHistograms(xfx_pair_dict, wChildren, photons)
+        
+        # Calculate Eigenvector PDF Reweight, for all of the eigenvectors in "EIGENVECTOR_PDF_NAME"
+        if DO_EIGENVECTOR_PDF_REWEIGHT:
+            MakeEigenvectorPDFReweightHistograms(xfx_pair_dict, wChildren, photons)
            
     outFile.Write()
 
-def MakeHistograms(tree, decay, photons, reweight):
-    histogramBuilder.fillCountHistograms(decay+"_unweighted")
-    histogramBuilder.fillCountHistograms(decay+"_weighted", reweight)
+# Returns a dictionary, for each pdf set, with a link to the first and second parton
+# distribution function, xfx, information from the root tree.
+def GetPDFPairInfo(tree):
+    xfx_pair_dict = {}
+    for pdf_name in PDF_NAMES:
+        print pdf_name
+        xfx_pair_dict[pdf_name] = [vector('double')(), vector('double')()]
+        tree.SetBranchAddress('xfx_first_'+pdf_name, xfx_pair_dict[pdf_name][0])
+        tree.SetBranchAddress('xfx_second_'+pdf_name, xfx_pair_dict[pdf_name][1])
+    return xfx_pair_dict
+
+# Standard Generator Histograms, no reweighting has been done.
+def MakeNoReweightHistograms(wChildren, photons):
+    weight =1
+    suffix = "unweighted" # No Suffix this is the default
+    MakeHistogramsByDecayType(wChildren, suffix, photons, weight)
+
+
+# Makes the Histograms for the Central PDF Reweightings
+# Uses the parton distribution functions stored in xfx_pair_dict to calculate
+# the reweighting from the central value of the original pdf to the new pdf.
+def MakeCentralPDFReweightHistograms(xfx_pair_dict, wChildren, photons):
+    for pdf_name in PDF_NAMES:
+        pdf_suffix = pdf_name+"_PDFReweight"
+        reweight = calcPDFReweight(xfx_pair_dict, ORIG_PDF_NAME, pdf_name)
+        MakeHistogramsByDecayType(wChildren, pdf_suffix, photons, reweight)
+
+# Makes the Histograms for the Eigenvector PDF Reweightings
+# Uses the pdf info stored in xfx_pair_dict, to calculate
+# the reweighting from a PDF sets central value to one of
+# it's eigenvector values.
+def MakeEigenvectorPDFReweightHistograms(xfx_pair_dict, wChildren, photons):
+    for pdf_eigenvector_index in range(0, xfx_pair_dict[EIGENVECTOR_PDF_NAME][0].size()):
+        pdf_eigenvector_suffix=EIGENVECTOR_PDF_NAME+"_"+str(pdf_eigenvector_index)+"_PDFEigenvectorReweight"
+        eigenvector_reweight = calcPDFEigenvectorReweight(xfx_pair_dict, EIGENVECTOR_PDF_NAME, pdf_eigenvector_index)
+        MakeHistogramsByDecayType(wChildren, pdf_eigenvector_suffix, photons, eigenvector_reweight)
+
+
+# Distinguish between the different Leptonic Decay types of the W, and Makes Histograms
+def MakeHistogramsByDecayType(wChildren, suffix, photons, reweight):
+    for wChild in wChildren: 
+        # Electron Decay
+        if(abs(wChild.PID()) == ELECTRON_PDGID and wChild.Status() == FINAL_STATE_STATUS):
+            decay="ElectronDecay_" + suffix
+            MakeHistograms(decay, photons, reweight)
+        if(abs(wChild.PID()) == MUON_PDGID and wChild.Status() == FINAL_STATE_STATUS):
+            decay="MuonDecay_"+ suffix
+            MakeHistograms(decay, photons, reweight)
+        if(abs(wChild.PID()) == TAU_PDGID and wChild.Status() == HARD_SCATTER_STATUS):
+            decay="TauDecay_"+ suffix
+            MakeHistograms(decay, photons, reweight)
+
+# Make Count, Lead Photon Pt, and other Histograms
+def MakeHistograms(decay, photons, reweight):
+    histogramBuilder.fillCountHistograms(decay, reweight)
     leadPhoton = selectLead(photons)
     histogramBuilder.fillPtHistograms(decay, leadPhoton.Pt(), reweight)
     histogramBuilder.fillPtCategoryHistograms(decay, leadPhoton.Pt(), reweight)
     #histogramBuilder.fillPhotonLocationCategoryHistograms(decay, findPhotonLocations(photons), reweight)
     #histogramBuilder.fillPtAndLocationCategoryHistograms(decay, findPhotonLocations(photons), leadPhoton.Pt(), reweight)
-
-
 
 # Calculate PDF reweighting
 def calcPDFReweight(xfx_pair_dict, orig_pdf_name, pdf_name):
@@ -146,7 +166,7 @@ def calcPDFReweight(xfx_pair_dict, orig_pdf_name, pdf_name):
     return reweight
 
 #Calculate Reweighting from central value of a set, to up-down eigenvector values of the set.
-def calcPDFEigenvectorReweight(xfx_pair_dict, eigenvector_pdf_name, eigenvector_index):
+def calcPDFEigenvectorReweight(xfx_pair_dict, eigenvector_pdf_name, pdf_eigenvector_index):
     eigenvector_reweight =1;
     
     # Central Value is the 0 index in the vector
@@ -155,19 +175,34 @@ def calcPDFEigenvectorReweight(xfx_pair_dict, eigenvector_pdf_name, eigenvector_
     central_xfx_first = xfx_first[0]
     central_xfx_second = xfx_second[0]
 
-    eigenvector_xfx_first = xfx_first[eigenvector_index]
-    eigenvector_xfx_second = xfx_second[eigenvector_index]
+    eigenvector_xfx_first = xfx_first[pdf_eigenvector_index]
+    eigenvector_xfx_second = xfx_second[pdf_eigenvector_index]
             
     eigenvector_reweight = (eigenvector_xfx_first * eigenvector_xfx_second) / (central_xfx_first*central_xfx_second)
     return eigenvector_reweight
 
+
+# Select Particles that have a W Parent
+def SelectWChildren(tree):
+    wChildren = []
+    particleIdentification.assignParticleByParentID(tree, wChildren, W_PDGID)
+    return wChildren
+
+# Select Photons, Can assume they come from a fiducial event, but must make sure that they
+# also pass the photon object cuts.
+def SelectPhotons(tree):
+    photons = []
+    particleIdentification.assignParticleByID(tree, photons, PHOTON_PDGID)
+    photons= objectCuts.selectOnStatus(photons, 1)
+    photons=objectCuts.selectOnPtEta(photons, minPhotonPt, maxPhotonEta)
+    photons=parentCuts.selectOnPhotonParentage(photons)
+    return photons
+
 #Select Lead Particle by Pt
 def selectLead(particles):
-    #print "Start"
     maxPt = 0
     lead = None
     for particle in particles:
-        #print particle.Pt()
         if particle.Pt() > maxPt :
             maxPt = particle.Pt()
             lead =  particle
@@ -209,8 +244,7 @@ def findPhotonLocations(photons):
     #Lead in EndCap Sub in Barrel
     if abs(photonLead.Eta()) >endCapMinEta and abs(photonSubLead.Eta()) < barrelMaxEta:
         return 2
-   
-    #if(tree.isEE_leadph12 and tree.isEE_sublph12):
+    #otherwise
     return 3
 
 if __name__=="__main__":

@@ -6,7 +6,6 @@
 # python MakeRecoPDFReweightCategoryHistograms.py /data/users/cranelli/WGamGam/Acceptances/AnalysisRECOCuts_Skim/LepGammaGammaFinalEl_2015_03_31_ScaleFactors_PDFReweights/job_summer12_WAA_ISR/tree.root test.root
 #
 
-
 import sys
 
 from ROOT import TFile
@@ -20,33 +19,39 @@ import parentCuts
 
 import histogramBuilder
 
-#inFileDir="../test/"
-treeLoc="EventTree"
+# Define Global Variables
 
-outFileDir="../test/"
+TREELOC="EventTree"
+OUTDIR="../test/Histograms/"
 
-#PDF Reweighting
-pdf_names=['cteq6l1', 'MSTW2008lo68cl', 'cteq66'] #cteq6l1 is the original
-orig_pdf_name = pdf_names[0]
+# Unweighted Histograms
+DO_UNWEIGHTED=True
+
+# With Scale Factor Weight
+DO_SCALEFACTOR = True
+
+
+#Central PDF Reweighting
+DO_CENTRAL_PDF_REWEIGHT=True
+PDF_NAMES=['cteq6l1', 'MSTW2008lo68cl', 'cteq66'] #cteq6l1 is the original
+ORIG_PDF_NAME = 'cteq6l1'
 
 #Eigenvector PDF Reweighting
-eigenvector_pdf_name=pdf_names[2]
+DO_EIGENVECTOR_PDF_REWEIGHT=True
+EIGENVECTOR_PDF_NAME= 'cteq66'
 
+#Make Reco Histograms
 def MakeRecoPDFReweightCategoryHistograms(inFileLoc="", outFileName="test.root"):
 
     # In File, Out File, and Tree
     inFile = TFile(inFileLoc)
-    tree = inFile.Get(treeLoc)
-    outFile = TFile(outFileDir + outFileName, "RECREATE")
+    tree = inFile.Get(TREELOC)
+    # New File
+    outFile = TFile(OUTDIR + outFileName, "RECREATE")
 
-    # Create a dictionairy (map) to store the addresses of the xfx pairs
-    # for each PDF set.
-    xfx_pair_dict = {}
-    for pdf_name in pdf_names:
-        print pdf_name
-        xfx_pair_dict[pdf_name] = [vector('double')(), vector('double')()]
-        tree.SetBranchAddress('xfx_first_'+pdf_name, xfx_pair_dict[pdf_name][0])
-        tree.SetBranchAddress('xfx_second_'+pdf_name, xfx_pair_dict[pdf_name][1])
+
+    # Holder for PDF Pair Information
+    xfx_pair_dict = GetPDFPairInfo(tree)
 
     # Loop over Events
     nentries = tree.GetEntries()
@@ -55,62 +60,117 @@ def MakeRecoPDFReweightCategoryHistograms(inFileLoc="", outFileName="test.root")
     for i in range(0, nentries):
         if(i%1000==0): print i
         tree.GetEntry(i)
-
-
         
-        #Calculate Weight Using Scale Factors and PDF Reweighting
-        weight=1
+        #Unweighted
+        if DO_UNWEIGHTED:
+            MakeRecoHistograms_Unweighted(tree)
+        
+        # Caclulate Scale Factor Weights
+        if DO_SCALEFACTOR:
+            MakeRecoHistograms_ScaleFactor(tree)
+        
+        #Calculate Central PDF Reweight (includes scale factor)
+        if DO_CENTRAL_PDF_REWEIGHT:
+            MakeRecoHistograms_CentralPDFReweight(xfx_pair_dict, tree)
 
-        #Calculate PDF Reweight
-        for pdf_name in pdf_names:
-            pdf_reweight = calcPDFReweight(xfx_pair_dict, orig_pdf_name, pdf_name)
+        # Calculate Eigenvector PDF Reweights (includes scale factor)
+        if DO_EIGENVECTOR_PDF_REWEIGHT:
+            MakeRecoHistograms_EigenvectorPDFReweight(xfx_pair_dict, tree)
 
-            scalefactor =1;
-            
-            isElectronChannel=(tree.el_passtrig_n> 0 and tree.el_n==1 and tree.mu_n==0)
-            isMuonChannel=(tree.mu_passtrig25_n>0 and tree.mu_n==1 and tree.el_n==0)
-
-            if(isElectronChannel):
-                channel="ElectronChannel_"+pdf_name+"_PDFReweight"
-                scalefactor = tree.el_trigSF*tree.ph_idSF*tree.ph_evetoSF*tree.PUWeight
-                weight = pdf_reweight*scalefactor
-                MakeHistograms(tree, channel, weight)
-            if(isMuonChannel):
-                channel="MuonChannel_"+pdf_name+"_PDFReweight"
-                scalefactor = tree.mu_trigSF*tree.mu_isoSF*tree.mu_idSF*tree.ph_idSF*tree.PUWeight
-                weight =pdf_reweight*scalefactor
-                MakeHistograms(tree, channel, weight)
-            # if(not isElectronChannel and not isMuonChannel):
-
-        # Calculate Eigenvector PDF Reweight
-        # Loop Over each Eigenvector element in the xfx vector.
-        for eigenvector_index in range(0, xfx_pair_dict[eigenvector_pdf_name][0].size()):
-            eigenvector_reweight = calcPDFEigenvectorReweight(xfx_pair_dict, eigenvector_pdf_name, eigenvector_index)
-            if(isElectronChannel):
-                channel="ElectronChannel_"+eigenvector_pdf_name+"_"+str(eigenvector_index)+"_PDFReweight"
-                scalefactor = tree.el_trigSF*tree.ph_idSF*tree.ph_evetoSF*tree.PUWeight
-                weight = eigenvector_reweight*scalefactor
-                MakeHistograms(tree, channel, weight)
-            if(isMuonChannel):
-                channel="MuonChannel_"+eigenvector_pdf_name+"_"+str(eigenvector_index)+"_PDFReweight"
-                scalefactor = tree.mu_trigSF*tree.mu_isoSF*tree.mu_idSF*tree.ph_idSF*tree.PUWeight
-                weight =eigenvector_reweight*scalefactor
-                MakeHistograms(tree, channel, weight)
             
     outFile.Write()
 
+# Returns a dictionary, for each pdf set, with a link to the first and second parton
+# distribution function, xfx, information from the root tree.
+def GetPDFPairInfo(tree):
+    xfx_pair_dict = {}
+    for pdf_name in PDF_NAMES:
+        print pdf_name
+        xfx_pair_dict[pdf_name] = [vector('double')(), vector('double')()]
+        tree.SetBranchAddress('xfx_first_'+pdf_name, xfx_pair_dict[pdf_name][0])
+        tree.SetBranchAddress('xfx_second_'+pdf_name, xfx_pair_dict[pdf_name][1])
+    return xfx_pair_dict
+
+# Unweighted Histograms
+def MakeRecoHistograms_Unweighted(tree):
+    suffix = "unweighted"
+    weight = 1
+    MakeHistogramsByChannelType(tree, suffix, weight)
+
+# Scale Factor Weighted Histograms
+def MakeRecoHistograms_ScaleFactor(tree):
+    suffix = "ScaleFactor"
+    scalefactor = CalcScaleFactor(tree)
+    MakeHistogramsByChannelType(tree, suffix, scalefactor)
+
+# Makes the Reco Histograms for the Central PDF Reweightings. Uses the stored parton distribution
+# functions to calculate the reweighting from the central value of the original pdf to the new pdf.
+# Includes ScaleFactor
+def MakeRecoHistograms_CentralPDFReweight(xfx_pair_dict, tree):
+    scalefactor = CalcScaleFactor(tree)
+    for pdf_name in PDF_NAMES:
+        pdf_suffix = pdf_name+"_PDFReweight"
+        pdf_reweight = calcPDFReweight(xfx_pair_dict, ORIG_PDF_NAME, pdf_name)
+        suffix = "ScaleFactor_" + pdf_suffix
+        weight = scalefactor * pdf_reweight
+        MakeHistogramsByChannelType(tree, suffix, weight)
+
+# Makes the Histograms for the Eigenvector PDF Reweightings. Uses the stord pdf info to calculate
+# the reweighting from a PDF set's central value to one of it's eigenvector values.
+#Includes ScaleFactor
+def MakeRecoHistograms_EigenvectorPDFReweight(xfx_pair_dict, tree):
+    scalefactor = CalcScaleFactor(tree)
+    # Loop Over each Eigenvector element in the xfx vector.
+    for eigenvector_index in range(0, xfx_pair_dict[EIGENVECTOR_PDF_NAME][0].size()):
+        pdf_eigenvector_suffix = EIGENVECTOR_PDF_NAME+"_"+str(eigenvector_index)+"_PDFReweight"
+        pdf_eigenvector_reweight = calcPDFEigenvectorReweight(xfx_pair_dict, EIGENVECTOR_PDF_NAME, eigenvector_index)
+        suffix = "ScaleFactor_" + pdf_eigenvector_suffix
+        weight = scalefactor * pdf_eigenvector_reweight
+        MakeHistogramsByChannelType(tree, suffix, weight)
+
+# Distinguish between the different Leptonic Signal Channels, and make Histograms
+def MakeHistogramsByChannelType(tree, suffix, weight):
+    scalefactor =1;
+    # Identify whether the event is from the electron or muon channel
+
+    if(IsElectronChannel(tree)):
+        channel="ElectronChannel_"+suffix
+        MakeHistograms(tree, channel, weight)
+    if(IsMuonChannel(tree)):
+        channel="MuonChannel_"+suffix
+        MakeHistograms(tree, channel, weight)
+# if(not IsElectronChannel(tree) and not IsMuonChannel(tree)):
+
 def MakeHistograms(tree, channel, weight):
-    
     histogramBuilder.fillCountHistograms(channel+"_unweighted")
     histogramBuilder.fillCountHistograms(channel+"_weighted", weight)
-    #histogramBuilder.fillScaleFactorHistograms("ScaleFactors_"+channel, weight)
     histogramBuilder.fillPtHistograms(channel+"_weighted", tree.pt_leadph12, weight)
     histogramBuilder.fillPtCategoryHistograms(channel+"_weighted", tree.pt_leadph12, weight)
-    #histogramBuilder.fillPhotonLocationCategoryHistograms(channel+"_ScaleFactorWeight", findPhotonLocations(tree),weight)
-    #histogramBuilder.fillPtAndLocationCategoryHistograms(channel+"_ScaleFactorWeight", findPhotonLocations(tree),
-    #                                                     tree.pt_leadph12, weight)
-    #histogramBuilder.fillPtAndLocationCategoryHistograms(channel, findPhotonLocations(tree),
-     #                                                    tree.pt_leadph12)
+# histogramBuilder.fillPhotonLocationCategoryHistograms(channel+"_weighted", findPhotonLocations(tree),weight)
+#   histogramBuilder.fillPtAndLocationCategoryHistograms(channel+"_weighted", findPhotonLocations(tree),tree.pt_leadph12, weight)
+
+
+#Identify whether the event is in the electron channel
+def IsElectronChannel(tree):
+    return (tree.el_passtrig_n> 0 and tree.el_n==1 and tree.mu_n==0)
+
+# Identrify whether the event is in the muon channel
+def IsMuonChannel(tree):
+    return (tree.mu_passtrig25_n>0 and tree.mu_n==1 and tree.el_n==0)
+
+#Caculate Scale Factor Weight, different whether it is the muon of electron channel.
+def CalcScaleFactor(tree):
+    
+    scalefactor = 1
+    
+    if(IsElectronChannel(tree)):
+        scalefactor = tree.el_trigSF*tree.ph_idSF*tree.ph_evetoSF*tree.PUWeight
+    
+    if(IsMuonChannel(tree)):
+        scalefactor = tree.mu_trigSF*tree.mu_isoSF*tree.mu_idSF*tree.ph_idSF*tree.PUWeight
+        
+    return scalefactor
+
 
 
 # Calculate PDF reweighting
@@ -118,8 +178,8 @@ def calcPDFReweight(xfx_pair_dict, orig_pdf_name, pdf_name):
     reweight =1;
     
     # Central Value is the 0 index in the vector
-    orig_xfx_first = xfx_pair_dict[orig_pdf_name][0]
-    orig_xfx_second = xfx_pair_dict[orig_pdf_name][1]
+    orig_xfx_first = xfx_pair_dict[ orig_pdf_name][0]
+    orig_xfx_second = xfx_pair_dict[ orig_pdf_name][1]
     orig_central_xfx_first = orig_xfx_first[0]
     orig_central_xfx_second = orig_xfx_second[0]
     
@@ -132,12 +192,12 @@ def calcPDFReweight(xfx_pair_dict, orig_pdf_name, pdf_name):
     return reweight
 
 #Calculate Reweighting from central value of a set, to up-down eigenvector values of the set.  
-def calcPDFEigenvectorReweight(xfx_pair_dict, eigenvector_pdf_name, eigenvector_index):
+def calcPDFEigenvectorReweight(xfx_pair_dict, EIGENVECTOR_PDF_NAME, eigenvector_index):
     eigenvector_reweight =1;
     
     # Central Value is the 0 index in the vector
-    xfx_first = xfx_pair_dict[eigenvector_pdf_name][0]
-    xfx_second = xfx_pair_dict[eigenvector_pdf_name][1]
+    xfx_first = xfx_pair_dict[EIGENVECTOR_PDF_NAME][0]
+    xfx_second = xfx_pair_dict[EIGENVECTOR_PDF_NAME][1]
     central_xfx_first = xfx_first[0]
     central_xfx_second = xfx_second[0]
     
