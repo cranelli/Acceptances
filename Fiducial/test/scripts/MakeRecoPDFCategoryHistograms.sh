@@ -20,9 +20,10 @@ ROOT_NAME="tree.root"
 FILE_ISR=$SKIM_PATH$ISR_DIR$ROOT_NAME
 FILE_FSR=$SKIM_PATH$FSR_DIR$ROOT_NAME
 
+HIST_DIR="../Histograms/"
 
-OUT_ISR=$SKIM_NAME"_ISR_"$SUFFIX
-OUT_FSR=$SKIM_NAME"_FSR_"$SUFFIX
+OUT_ISR=$SKIM_NAME"/ISR_"$SUFFIX
+OUT_FSR=$SKIM_NAME"/FSR_"$SUFFIX
 
 
 cd ../../python;
@@ -41,8 +42,8 @@ cd ../test/scripts
 #echo $OUT_FSR | sed 's/FSR/WeightedTotal/'
 OUT_WEIGHTED=$(echo $OUT_FSR | sed 's/FSR/WeightedTotal/')
 #echo $OUT_WEIGHTED
-echo python weightAndAddHistograms.py ../Histograms/$OUT_ISR ../Histograms/$OUT_FSR ../Histograms/$OUT_WEIGHTED
-python weightAndAddHistograms.py ../Histograms/$OUT_ISR ../Histograms/$OUT_FSR ../Histograms/$OUT_WEIGHTED
+echo python weightAndAddHistograms.py $HIST_DIR$OUT_ISR $HIST_DIR$OUT_FSR $HIST_DIR$OUT_WEIGHTED
+python weightAndAddHistograms.py $HIST_DIR$OUT_ISR $HIST_DIR$OUT_FSR $HIST_DIR$OUT_WEIGHTED
 
 
 

@@ -17,9 +17,9 @@ Histograms = {}
 #        Histograms[key] = TH1F(key,key, bins, xmin, xmax)
 #    for particle in particles: Histograms[key].Fill(1)
 
-def fillPtCategoryHistograms(prefix, pt, weight=1,bins=4):
+def fillPtCategoryHistograms(prefix, pt, weight=1,bins=3):
     key=prefix + "_Category_Pt"
-    binLowE = [15,25,40,70,200]
+    binLowE = [15,25,40,70]
     if not key in Histograms:
         Histograms[key]=TH1F(key, key, bins,array('d',binLowE))
         Histograms[key].Sumw2()

@@ -142,10 +142,9 @@ def MakeHistogramsByChannelType(tree, suffix, weight):
 # if(not IsElectronChannel(tree) and not IsMuonChannel(tree)):
 
 def MakeHistograms(tree, channel, weight):
-    histogramBuilder.fillCountHistograms(channel+"_unweighted")
-    histogramBuilder.fillCountHistograms(channel+"_weighted", weight)
-    histogramBuilder.fillPtHistograms(channel+"_weighted", tree.pt_leadph12, weight)
-    histogramBuilder.fillPtCategoryHistograms(channel+"_weighted", tree.pt_leadph12, weight)
+    histogramBuilder.fillCountHistograms(channel, weight)
+    histogramBuilder.fillPtHistograms(channel, tree.pt_leadph12, weight)
+    histogramBuilder.fillPtCategoryHistograms(channel, tree.pt_leadph12, weight)
 # histogramBuilder.fillPhotonLocationCategoryHistograms(channel+"_weighted", findPhotonLocations(tree),weight)
 #   histogramBuilder.fillPtAndLocationCategoryHistograms(channel+"_weighted", findPhotonLocations(tree),tree.pt_leadph12, weight)
 

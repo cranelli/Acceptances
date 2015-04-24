@@ -7,18 +7,9 @@ from ROOT import TH1F
 #from decimal import getcontext
 
 
-#fileLoc ="../Acceptances.root"
-fileLoc ="../Acceptances_PDFReweights.root"
-#histName="MuonChannel_Acceptances_ScaleFactorWeight_Category_PtAndLocation"
-#histName="Category_PtAndLocation_Acceptances_ElectronChannel"
-#histName="Acceptances"
+fileLoc ="../Histograms/CommonFiducial_wMT_Skim/CommonFiducial_wMT_Skim_PDFReweights_WeightedTotal_GenCategoryHistograms.root"
 
-
-#fileLoc ="../AnalysisRecoCuts_ScaleFactors_WeightedTotal_CategoryHistograms.root"
-#histName="ElectronChannel_Category_PtAndLocation"
-
-outFileDir="../Tables/Weighted_GEN/"
-
+outFileDir="../Histograms/CommonFiducial_wMT_Skim/BinContent/"
 
 Header= " \n"
 
@@ -76,7 +67,6 @@ def printh2BinContent(h2):
             output += str(format(h2.GetBinContent(x,y), '.4f').rjust(10))
         
         output += '\n'
-
 
     outfile.write(output)
     outfile.close()
