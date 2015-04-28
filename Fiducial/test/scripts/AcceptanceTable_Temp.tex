@@ -19,24 +19,24 @@
 \begin{table}[htdp]
 \caption{Weighted Combination Gen Events within Fiducial Region}
 \begin{center}
-\begin{tabular}{|c|c|c|}
+\begin{tabular}{|c|c|c|c|c|}
 
 \hline
-$P_t$ Range & Electron Decay & Muon Decay \\
+$P_t$ Range & Electron Decay & Tau To Electron Decay & Muon Decay & Tau To Muon Decay\\
 \hline
-15-25 & WEIGHTED_GEN_ELECTRON_PT1 &  WEIGHTED_GEN_MUON_PT1 \\
-25-40 & WEIGHTED_GEN_ELECTRON_PT2 &  WEIGHTED_GEN_MUON_PT2 \\
-40-70 & WEIGHTED_GEN_ELECTRON_PT3 &  WEIGHTED_GEN_MUON_PT3 \\
-70+ & WEIGHTED_GEN_ELECTRON_PT4 &  WEIGHTED_GEN_MUON_PT4 \\
+15-25 & WEIGHTED_GEN_ELECTRON_PT1 & WEIGHTED_GEN_TAUTOELECTRON_PT1 & WEIGHTED_GEN_MUON_PT1 & WEIGHTED_GEN_TAUTOMUON_PT1\\
+25-40 & WEIGHTED_GEN_ELECTRON_PT2 &  WEIGHTED_GEN_TAUTOELECTRON_PT2&WEIGHTED_GEN_MUON_PT2 &WEIGHTED_GEN_TAUTOMUON_PT2\\
+40-70 & WEIGHTED_GEN_ELECTRON_PT3 & WEIGHTED_GEN_TAUTOELECTRON_PT3 &WEIGHTED_GEN_MUON_PT3 &WEIGHTED_GEN_TAUTOMUON_PT3\\
+70+ & WEIGHTED_GEN_ELECTRON_PT4 & WEIGHTED_GEN_TAUTOELECTRON_PT4 &WEIGHTED_GEN_MUON_PT4 &WEIGHTED_GEN_TAUTOMUON_PT4\\
 \hline
 \hline
-Total& WEIGHTED_GEN_ELECTRON_TOTAL &WEIGHTED_GEN_MUON_TOTAL \\
+Total & WEIGHTED_GEN_ELECTRON_TOTAL &WEIGHTED_GEN_TAUTOELECTRON_TOTAL &WEIGHTED_GEN_MUON_TOTAL &WEIGHTED_GEN_TAUTOMUON_TOTAL\\
 \hline
 
 \end{tabular}
 \end{center}
 \label{default}
-\end{table}%
+\end{table}
 
 \begin{table}[htdp]
 \caption{Weighted Combination Reco Events (w/ SF Weights) Passing Analysis Cuts}
@@ -59,6 +59,46 @@ Total& WEIGHTED_RECO_ELECTRON_TOTAL &WEIGHTED_RECO_MUON_TOTAL \\
 \end{center}
 \label{default}
 \end{table}%  
+
+\begin{table}[htdp]
+\begin{center}
+\begin{tabular}{|c|c|c|}
+\hline
+$P_t$ Range & Electron Channel & Muon Channel \\
+\hline
+15-25 & ACCEPTANCE_ELECTRON_TAUSIG_PT1&  ACCEPTANCE_MUON_TAUSIG_PT1 \\
+25-40 & ACCEPTANCE_ELECTRON_TAUSIG_PT2&  ACCEPTANCE_MUON_TAUSIG_PT2 \\
+40-70 & ACCEPTANCE_ELECTRON_TAUSIG_PT3&  ACCEPTANCE_MUON_TAUSIG_PT3 \\
+70+ & ACCEPTANCE_ELECTRON_TAUSIG_PT4&  ACCEPTANCE_MUON_TAUSIG_PT4 \\
+\hline
+\hline
+Total& ACCEPTANCE_ELECTRON_TAUSIG_TOTAL&ACCEPTANCE_MUON_TAUSIG_TOTAL \\
+\hline
+\end{tabular}
+\end{center}
+\caption{Acceptances as function of Lead Photon $P_T$ with taus as signal}
+\label{default}
+\end{table}%
+
+\begin{table}[htdp]
+\begin{center}
+\begin{tabular}{|c|c|c|}
+\hline
+$P_t$ Range & Electron Channel & Muon Channel \\
+\hline
+15-25 & ACCEPTANCE_ELECTRON_TAUBKGD_PT1&  ACCEPTANCE_MUON_TAUBKGD_PT1 \\
+25-40 & ACCEPTANCE_ELECTRON_TAUBKGD_PT2&  ACCEPTANCE_MUON_TAUBKGD_PT2 \\
+40-70 & ACCEPTANCE_ELECTRON_TAUBKGD_PT3&  ACCEPTANCE_MUON_TAUBKGD_PT3 \\
+70+ & ACCEPTANCE_ELECTRON_TAUBKGD_PT4&  ACCEPTANCE_MUON_TAUBKGD_PT4 \\
+\hline
+\hline
+Total& ACCEPTANCE_ELECTRON_TAUBKGD_TOTAL&ACCEPTANCE_MUON_TAUBKGD_TOTAL \\
+\hline
+\end{tabular}
+\end{center}
+\caption{Acceptances as function of Lead Photon $P_T$ taus as background}
+\label{default}
+\end{table}%
 
 
 
