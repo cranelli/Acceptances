@@ -17,7 +17,7 @@ outFileDir="../Tables/PDFSystematics/"
 PDF_EIGENVECTOR_NAME="cteq66"
 NUM_PDF_EIGENVECTORS=45
 
-PDFSystematicStruct = namedtuple("PdfSystematicsStruct", "UP DN")
+PDFSystematicStruct = namedtuple("PdfSystematicStruct", "UP DN")
 
 def printPDFSystematics():
     
@@ -27,36 +27,37 @@ def printPDFSystematics():
             PDFSystematicAllBins=CalcPDFSystematicAllBins(channel, histType)
         
         print "PDF Systematics for Entries in " + channel + " " + histType
+        
         print "PDF Systematics Up: "
-        #print PDFSystematicAllBins.UP
+        for pdfSystematic in PDFSystematicAllBins:
+            print pdfSystematic.UP,
+        print
+
         print "PDF Systematics Dn: "
-        #print PDFSystematicAllBins.DN
-            
-        """
-        print "root sum of squares:"
-        print "master differences up"
-        print sumInQuadrature(masterDifferencesUpAllEigenvectors)
-        print "master differences down"
-        print sumInQuadrature(masterDifferencesDownAllEigenvectors)
-        """
+        for pdfSystematic in PDFSystematicAllBins:
+            print pdfSystematic.DN,
+        print
+
             
     FILE.Close()
 
 
 def CalcPDFSystematicAllBins(channel, histType):
+    PDFSystematicAllBins=[]
+    
     # Select Histogram with the Central Value 0
     centralPDFHist=GetCentralPDFHist(channel, histType)
+    
     # Loop over All bins in the Histogram, including the overflow bin.
     for bin_index in range(1, centralPDFHist.GetNbinsX()+2):
         PDFSystematic = CalcPDFSystematic(channel, histType, bin_index)
-        PDFSystematicAllBins.append(PDFSYstematic)
+        PDFSystematicAllBins.append(PDFSystematic)
     return PDFSystematicAllBins
 
 
 # Calculates the PDF Systematic over all the Eigenvectors, using the Master Equation
 def CalcPDFSystematic(channel, histType, bin_index):
 
-    PDFSystematic = PDFSystematicStruct(0,0)
     masterDifferencesUpAllEigenvectors=[]
     masterDifferencesDnAllEigenvectors=[]
 
@@ -67,16 +68,18 @@ def CalcPDFSystematic(channel, histType, bin_index):
     for eigenpair_index in range(1, num_eigenvector_pairs):
         histUP =GetEigenvectorHistUP(channel, histType, eigenpair_index)
         up_value=histUP.GetBinContent(bin_index)
+
         histDN =GetEigenvectorHistDN(channel, histType, eigenpair_index)
         dn_value=histDN.GetBinContent(bin_index)
+
         masterDifferencesUpAllEigenvectors.append(masterDifferenceUP(central_value, up_value, dn_value))
         masterDifferencesDnAllEigenvectors.append(masterDifferenceDN(central_value, up_value, dn_value))
-                                                  
 
-    PDFSystematic.UP = sumInQuadrature(masterDifferencesUpAllEigenvectors)
-    PDFSystematic.DN = sumInQuadrature(masterDifferencesDnAllEigenvectors)
+    PDFSystematic_UP = sumInQuadrature(masterDifferencesUpAllEigenvectors)
+    PDFSystematic_DN = sumInQuadrature(masterDifferencesDnAllEigenvectors)
 
-    return PDFSystemtic
+    PDFSystematic = PDFSystematicStruct(PDFSystematic_UP,PDFSystematic_DN)
+    return PDFSystematic
     
 
 # up value comes from the "up eigenvector" and down from the "down eigenvector"
