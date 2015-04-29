@@ -30,32 +30,39 @@ WEIGHTED_RECO_FILE= TFile(HIST_DIR+RECO_PREFIX+"/"+RECO_PREFIX+"_ScaleFactors_PD
 ACCEPTANCE_FILE=TFile(HIST_DIR+"LepGammaGammaFinalElandMuUnblindAll_2015_4_19_ScaleFactors_PDFReweights/Acceptances_test.root")
 
 
+# PDF Systematic File
+PDFSYSTEMATIC_FILE = TFile(HIST_DIR+"LepGammaGammaFinalElandMuUnblindAll_2015_4_19_ScaleFactors_PDFReweights/PDFSystematics_test.root")
+
 def MakeAcceptanceTables():
     # Hold Histograms in Dictionaries
     GenHistograms = {}
     RecoHistograms = {}
     AcceptanceHistograms = {}
-    GetHistograms(GenHistograms, RecoHistograms, AcceptanceHistograms)
+    PDFSystematicHistograms = {}
+    GetHistograms(GenHistograms, RecoHistograms, AcceptanceHistograms, PDFSystematicHistograms)
     
     #Loop over all the lines in the input file (Table Template)
     for line in fileinput.input():
-        line = Replace(line, GenHistograms, RecoHistograms, AcceptanceHistograms)
+        line = Replace(line, GenHistograms, RecoHistograms, AcceptanceHistograms, PDFSystematicHistograms)
         print line,
 
 
 ################### Get Histograms ##########################################################
 
 # From the Global Files, gets the needed Histograms to fill the Acceptance Tables.
-def GetHistograms(GenHistograms, RecoHistograms, AcceptanceHistograms):
+def GetHistograms(GenHistograms, RecoHistograms, AcceptanceHistograms, PDFSystematicHistograms):
     samples = ["WEIGHTED"]
     for sample_type in samples:
         GetGenHistogramsbySample(GenHistograms, sample_type, WEIGHTED_GEN_FILE)
         GetRecoHistogramsBySample(RecoHistograms, sample_type, WEIGHTED_RECO_FILE)
+
     GetAcceptanceHistograms(AcceptanceHistograms, ACCEPTANCE_FILE)
+    GETPDFSystematicHistograms(PDFSystematicHistograms,PDFSYSTEMATIC_FILE)
 
-
+#
 # From the input files, adds the generator histograms to the "Histograms" dictionairy.  Their keys correspond
 # with the LaTeX placeholder names.
+#
 def GetGenHistogramsbySample(Histograms, sample_type, file):
     #Pt Hists
     Histograms[sample_type+"_GEN_ELECTRON_PT"]=WEIGHTED_GEN_FILE.Get("ElectronDecay_unweighted_Category_Pt")
@@ -68,9 +75,10 @@ def GetGenHistogramsbySample(Histograms, sample_type, file):
     Histograms[sample_type+"_GEN_TAUTOELECTRON_TOTAL"]=WEIGHTED_GEN_FILE.Get("TauToElectronDecay_unweighted_Count")
     Histograms[sample_type+"_GEN_MUON_TOTAL"]=WEIGHTED_GEN_FILE.Get("MuonDecay_unweighted_Count")
     Histograms[sample_type+"_GEN_TAUTOMUON_TOTAL"]=WEIGHTED_GEN_FILE.Get("TauToMuonDecay_unweighted_Count")
-
+#
 # From the input files, adds the reco histograms to the "Histograms" dictionairy.  Their keys correspond
 # with the LaTeX placeholder names.
+#
 def GetRecoHistogramsBySample(Histograms, sample_type, file):
     #Pt Hists
     Histograms[sample_type+"_RECO_ELECTRON_PT"]=WEIGHTED_RECO_FILE.Get("ElectronChannel_ScaleFactor_Category_Pt")
@@ -78,8 +86,9 @@ def GetRecoHistogramsBySample(Histograms, sample_type, file):
     #Counting Hists
     Histograms[sample_type+"_RECO_ELECTRON_TOTAL"]=WEIGHTED_RECO_FILE.Get("ElectronChannel_ScaleFactor_Count")
     Histograms[sample_type+"_RECO_MUON_TOTAL"]=WEIGHTED_RECO_FILE.Get("MuonChannel_ScaleFactor_Count")
-
-# From the input files, get the Acceptance Histograms.
+#
+# From the input file, get the Acceptance Histograms.
+#
 def GetAcceptanceHistograms(Histograms, file):
     Histograms["ACCEPTANCE_ELECTRON_TAUBKGD_PT"] = ACCEPTANCE_FILE.Get("ElectronChannel_Acceptance_TauBkgd_Category_Pt")
     Histograms["ACCEPTANCE_ELECTRON_TAUSIG_PT"] = ACCEPTANCE_FILE.Get("ElectronChannel_Acceptance_TauSig_Category_Pt")
@@ -90,19 +99,31 @@ def GetAcceptanceHistograms(Histograms, file):
     Histograms["ACCEPTANCE_ELECTRON_TAUSIG_TOTAL"] = ACCEPTANCE_FILE.Get("ElectronChannel_Acceptance_TauSig_Count")
     Histograms["ACCEPTANCE_MUON_TAUBKGD_TOTAL"] = ACCEPTANCE_FILE.Get("MuonChannel_Acceptance_TauBkgd_Count")
     Histograms["ACCEPTANCE_MUON_TAUSIG_TOTAL"] = ACCEPTANCE_FILE.Get("MuonChannel_Acceptance_TauSig_Count")
-                                                  
+#
+# From the input file, get the PDF Systematic Histogram.
+#
+def GETPDFSystematicHistograms(Histograms, file):
+    Histograms["PDFSYSTEMATIC_ELECTRON_TAUSIG_SET_TOTAL"]=PDFSYSTEMATIC_FILE.Get("ElectronChannel_TauSig_PDFSetSystematic_Count")
+    Histograms["PDFSYSTEMATIC_ELECTRON_TAUSIG_EIGENVECTOR_UP_TOTAL"]= PDFSYSTEMATIC_FILE.Get("ElectronChannel_TauSig_PDFEigenvectorSystematicUP_Count")
+    Histograms["PDFSYSTEMATIC_ELECTRON_TAUSIG_EIGENVECTOR_DN_TOTAL"]= PDFSYSTEMATIC_FILE.Get("ElectronChannel_TauSig_PDFEigenvectorSystematicDN_Count")
+
+    Histograms["PDFSYSTEMATIC_MUON_TAUSIG_SET_TOTAL"]=PDFSYSTEMATIC_FILE.Get("MuonChannel_TauSig_PDFSetSystematic_Count")
+    Histograms["PDFSYSTEMATIC_MUON_TAUSIG_EIGENVECTOR_UP_TOTAL"]= PDFSYSTEMATIC_FILE.Get("MuonChannel_TauSig_PDFEigenvectorSystematicUP_Count")
+    Histograms["PDFSYSTEMATIC_MUON_TAUSIG_EIGENVECTOR_DN_TOTAL"]= PDFSYSTEMATIC_FILE.Get("MuonChannel_TauSig_PDFEigenvectorSystematicDN_Count")
+
                                                   
 ##################################################################################
 
 ############### Replace Place Holders ############################################
 
 # Replace Place Holders
-def Replace(line, GenHistograms, RecoHistograms, AcceptanceHistograms):
+def Replace(line, GenHistograms, RecoHistograms, AcceptanceHistograms, PDFSystematicHistograms):
     samples = ["WEIGHTED"]
     for sample_type in samples:
         line = ReplaceGen(line, GenHistograms, sample_type)
         line = ReplaceReco(line, RecoHistograms, sample_type)
     line = ReplaceAcceptance(line, AcceptanceHistograms)
+    line = ReplacePDFSystematic(line, PDFSystematicHistograms)
     return line
 
 # Replaces the PlaceHolders Corresponding to Generator Quantities
@@ -133,6 +154,18 @@ def ReplaceAcceptance(line, Histograms):
             line = ReplaceAcceptancePlaceHolders(line, Histograms,key_prefix)
     return line
 
+# Replaces the PlaceHolders Corresponding to PDF Systematics:
+def ReplacePDFSystematic(line, Histograms):
+    lepton_channels = ["ELECTRON","MUON"]
+    tau_handlers = ["TAUSIG"]
+    PDFSystematics=["SET", "EIGENVECTOR_UP", "EIGENVECTOR_DN"]
+    for lepton_type in lepton_channels:
+        for acceptance_type in tau_handlers:
+            for pdf_systematic_type in PDFSystematics:
+                key_prefix = "PDFSYSTEMATIC_"+lepton_type+"_"+acceptance_type+"_"+pdf_systematic_type
+                line = ReplacePDFSystematicPlaceHolders(line, Histograms, key_prefix)
+    return line
+
 # Handles the Formating for Both Reco and Gen Place Holders
 def ReplaceRecoGenPlaceHolders(line, Histograms, key_prefix):
     pt_key = key_prefix+"_PT"
@@ -146,6 +179,7 @@ def ReplaceRecoGenPlaceHolders(line, Histograms, key_prefix):
     line = re.sub(total_key,str(format(total,'.1f')), line)
     return line
 
+#Handles the Formatting for the Acceptances (Includes the Statistical Uncertainties)
 def ReplaceAcceptancePlaceHolders(line, Histograms, key_prefix):
     pt_key = key_prefix+"_PT"
     total_key = key_prefix+"_TOTAL"
@@ -158,6 +192,14 @@ def ReplaceAcceptancePlaceHolders(line, Histograms, key_prefix):
         line = re.sub(pt_key+str(i+1),str(format(pts[i]*100,'.2f'))+ " $\pm$ " + str(format(pt_errors[i]*100,'.2f')), line)
     
     line = re.sub(total_key,str(format(total*100,'.2f')) + " $\pm$ " + str(format(total_error*100,'.2f')), line)
+    return line
+
+#Handles the Formatting for the PDF Systematics
+def ReplacePDFSystematicPlaceHolders(line, Histograms, key_prefix):
+    total_key = key_prefix+"_TOTAL"
+    total = GetTotalBin(total_key, Histograms)
+
+    line = re.sub(total_key,str(format(total*100,'.2f')), line)
     return line
 
 
