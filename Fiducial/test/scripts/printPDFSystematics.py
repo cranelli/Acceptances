@@ -8,8 +8,8 @@ from ROOT import TH1F
 
 fileLoc ="../Acceptances_PDFReweights_4_19_2015.root"
 channels=["MuonChannel", "ElectronChannel"]
-histTypes=["weighted_Category_Pt"]
-#histTypes=["Category_PtAndLocation"]
+histTypes=["weighted_Count"]
+#histTypes=["weighted_Category_Pt"]
 outFileDir="../Tables/PDFSystematics/"
 
 pdf_eigenvector_name="cteq66"
