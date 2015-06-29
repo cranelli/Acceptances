@@ -2,7 +2,8 @@
 #Set up to take the ISR and FSR signal samples, make reco histograms for each, and make histograms
 #for the weighted merger. 
 #Example
-# ./MakeRecoPDFCategoryHistograms.sh /data/users/cranelli/WGamGam/Acceptances/AnalysisRECOCuts_Skim/LepGammaGammaFinalEl_2015_03_31_ScaleFactors_PDFReweights/
+# ./MakeRecoPDFCategoryHistograms.sh /data/users/cranelli/WGamGam/ReFilterFinalNtuple/NLO_LepGammaGammaFinalElandMu_2015_6_26_ScaleFactors_PDFReweights/
+
 
 SKIM_PATH=$1
 SKIM_NAME=${SKIM_PATH%?} #Removes Last Character, should be a '/'
@@ -12,8 +13,8 @@ SKIM_NAME="${SKIM_NAME##*/}"
 
 SUFFIX="RecoCategoryHistograms.root"
 
-ISR_DIR="job_summer12_WAA_ISR/"
-FSR_DIR="job_summer12_Wgg_FSR/"
+ISR_DIR="job_NLO_WAA_ISR/"
+FSR_DIR="job_NLO_WAA_FSR/"
 
 ROOT_NAME="tree.root"
 

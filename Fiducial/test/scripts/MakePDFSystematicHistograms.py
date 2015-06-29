@@ -8,44 +8,44 @@ from collections import namedtuple
 #from decimal import getcontext
 
 
-HIST_DIR="../Histograms/LepGammaGammaFinalElandMuUnblindAll_2015_4_19_ScaleFactors_PDFReweights/"
-fileLoc =HIST_DIR+"Acceptances_test.root"
-FILE = TFile(fileLoc, 'READ')
 channels=["MuonChannel", "ElectronChannel"]
 Acceptances=["TauSig", "TauBkgd"]
 histTypes=["Category_Pt", "Count"]
 
 
-outFileLoc=HIST_DIR+"PDFSystematics_test.root"
-OUT_FILE = TFile(outFileLoc, 'RECREATE')
+PDF_SET_NAMES=['NNPDF30_nlo_nf_5_pdfas', 'CT10nlo', 'MSTW2008nlo68cl']
+ORIG_PDF_NAME='NNPDF30_nlo_nf_5_pdfas'
 
-PDF_SET_NAMES=['cteq6l1', 'MSTW2008lo68cl', 'cteq66']
-ORIG_PDF_NAME='cteq6l1'
-
-PDF_EIGENVECTOR_NAME="cteq66"
-NUM_PDF_EIGENVECTORS=45
+PDF_EIGENVECTOR_NAME='NNPDF30_nlo_nf_5_pdfas'
+NUM_PDF_EIGENVECTORS=103
 
 PDFEigenvectorSystematicStruct = namedtuple("PdfEigenvectorSystematicStruct", "UP DN")
 
-def MakePDFSystematicHistograms():
+def MakePDFSystematicHistograms(hist_dir):
+
+    file_loc =hist_dir+"Acceptances.root"
+    file = TFile(file_loc, 'READ')
+
+    outfile_loc=hist_dir+"PDFSystematics.root"
+    outfile = TFile(outfile_loc, 'RECREATE')
     
     for channel in channels:
         for acceptance_type in Acceptances:
             for histType in histTypes:
                 # Stores PDF Systematics for Each Bin
                 #PDFSystematicAllBins=CalcPDFSystematicAllBins(channel, histType)
-                MakePDFEigenvectorSystematicHistograms(channel, acceptance_type, histType)
-                MakePDFSetSystematicHistograms(channel, acceptance_type, histType)
+                MakePDFEigenvectorSystematicHistograms(file, outfile, channel, acceptance_type, histType)
+                MakePDFSetSystematicHistograms(file, outfile,channel, acceptance_type, histType)
             
-    FILE.Close()
-    OUT_FILE.Close()
+    file.Close()
+    outfile.Close()
 
 
 # Makes the Histograms Storing the PDF Eigenvector Systematics
-def MakePDFEigenvectorSystematicHistograms(channel, acceptance_type, histType):
+def MakePDFEigenvectorSystematicHistograms(file, outfile, channel, acceptance_type, histType):
     
     # Select Histogram with the Central Value 0
-    centralPDFHist=GetCentralPDFHist( channel, acceptance_type, histType)
+    centralPDFHist=GetCentralPDFHist(file, channel, acceptance_type, histType)
     centralPDFHist.Print()
 
     # UP PDF Eigenvector Systematics
@@ -53,13 +53,14 @@ def MakePDFEigenvectorSystematicHistograms(channel, acceptance_type, histType):
     pdfEigenvectorSystUPHist=centralPDFHist.Clone(pdfEigenvectorSystUPHistName)
     pdfEigenvectorSystUPHist.Reset("ICE")
     
+    # DN PDF Eigenvector Systematics
     pdfEigenvectorSystDNHistName=channel+"_"+acceptance_type+"_PDFEigenvectorSystematicDN_"+histType
     pdfEigenvectorSystDNHist=centralPDFHist.Clone(pdfEigenvectorSystDNHistName)
     pdfEigenvectorSystDNHist.Reset("ICE")
     
     # Loop over All bins in the Histogram, including the overflow bin.
     for bin_index in range(1, centralPDFHist.GetNbinsX()+2):
-        PDFSystematic = CalcPDFEigenvectorSystematic(channel, acceptance_type, histType, bin_index)
+        PDFSystematic = CalcPDFEigenvectorSystematic(file, channel, acceptance_type, histType, bin_index)
         pdfEigenvectorSystUPHist.SetBinContent(bin_index, PDFSystematic.UP)
         #print str(bin_index)+": UP " + str(PDFSystematic.UP) ,
         pdfEigenvectorSystDNHist.SetBinContent(bin_index, PDFSystematic.DN)
@@ -74,8 +75,8 @@ def MakePDFEigenvectorSystematicHistograms(channel, acceptance_type, histType):
 
 # Makes the Histograms storing the PDF Set Systematic - the uncertainty depending on which
 # PDF set was used.
-def MakePDFSetSystematicHistograms(channel, acceptance_type, histType):
-    origPDFHist = GetPDFSetHist(ORIG_PDF_NAME, channel, acceptance_type, histType)
+def MakePDFSetSystematicHistograms(file, outfile, channel, acceptance_type, histType):
+    origPDFHist = GetPDFSetHist(file, ORIG_PDF_NAME, channel, acceptance_type, histType)
 
     pdfSetSystHistName= channel+"_"+acceptance_type+"_PDFSetSystematic_"+histType
     pdfSetSystHist=origPDFHist.Clone(pdfSetSystHistName)
@@ -83,7 +84,7 @@ def MakePDFSetSystematicHistograms(channel, acceptance_type, histType):
 
     # Loop over All bins in the Histogram, including the overflow bin.
     for bin_index in range(1, origPDFHist.GetNbinsX()+2):
-        pdfSetSyst = CalcPDFSetSystematic(channel, acceptance_type, histType, bin_index)
+        pdfSetSyst = CalcPDFSetSystematic(file, channel, acceptance_type, histType, bin_index)
         pdfSetSystHist.SetBinContent(bin_index, pdfSetSyst)
 
     pdfSetSystHist.Print("all")
@@ -91,13 +92,13 @@ def MakePDFSetSystematicHistograms(channel, acceptance_type, histType):
 
 # Calculates the PDF systematic.  Takes the difference between the acceptance for the original
 # PDF set and for the new PDF sets and sums them in quadrature.
-def CalcPDFSetSystematic(channel, acceptance_type, hist_type, bin_index):
+def CalcPDFSetSystematic(file, channel, acceptance_type, hist_type, bin_index):
     differences=[]
 
-    origPDFHist = GetPDFSetHist(ORIG_PDF_NAME, channel, acceptance_type, hist_type)
+    origPDFHist = GetPDFSetHist(file, ORIG_PDF_NAME, channel, acceptance_type, hist_type)
 
     for set_name in PDF_SET_NAMES:
-        newPDFHist=GetPDFSetHist(set_name, channel, acceptance_type, hist_type)
+        newPDFHist=GetPDFSetHist(file, set_name, channel, acceptance_type, hist_type)
         difference = newPDFHist.GetBinContent(bin_index)-origPDFHist.GetBinContent(bin_index)
         differences.append(difference)
 
@@ -106,20 +107,20 @@ def CalcPDFSetSystematic(channel, acceptance_type, hist_type, bin_index):
 
 
 # Calculates the PDF Systematic over all the Eigenvectors, using the Master Equation
-def CalcPDFEigenvectorSystematic(channel, acceptance_type, histType, bin_index):
+def CalcPDFEigenvectorSystematic(file, channel, acceptance_type, histType, bin_index):
 
     masterDifferencesUpAllEigenvectors=[]
     masterDifferencesDnAllEigenvectors=[]
 
-    centralPDFHist=GetCentralPDFHist(channel,acceptance_type, histType)
+    centralPDFHist=GetCentralPDFHist(file, channel,acceptance_type, histType)
     central_value = centralPDFHist.GetBinContent(bin_index)
 
     num_eigenvector_pairs = NUM_PDF_EIGENVECTORS/2
-    for eigenpair_index in range(1, num_eigenvector_pairs):
-        histUP =GetEigenvectorHistUP(channel, acceptance_type, histType, eigenpair_index)
+    for eigenpair_index in range(1, num_eigenvector_pairs+1):
+        histUP =GetEigenvectorHistUP(file, channel, acceptance_type, histType, eigenpair_index)
         up_value=histUP.GetBinContent(bin_index)
 
-        histDN =GetEigenvectorHistDN(channel, acceptance_type, histType, eigenpair_index)
+        histDN =GetEigenvectorHistDN(file, channel, acceptance_type, histType, eigenpair_index)
         dn_value=histDN.GetBinContent(bin_index)
 
         masterDifferencesUpAllEigenvectors.append(masterDifferenceUP(central_value, up_value, dn_value))
@@ -152,33 +153,33 @@ def sumInQuadrature(differences):
     return rootsumdif2
 
 # Gets the Histograms reweighted to a given PDF Set.
-def GetPDFSetHist(pdf_set_name, channel, acceptance_type, histType):
+def GetPDFSetHist(file, pdf_set_name, channel, acceptance_type, histType):
     pdfHistName = channel+"_"+pdf_set_name+"_PDFReweight_Acceptance_"+acceptance_type+"_"+histType
-    pdfHist = FILE.Get(pdfHistName)
+    pdfHist = file.Get(pdfHistName)
     return pdfHist
 
 #Selects the Central PDF Histogram 0
-def GetCentralPDFHist(channel, acceptance_type, histType):
+def GetCentralPDFHist(file, channel, acceptance_type, histType):
     histNameCentral= channel+"_"+PDF_EIGENVECTOR_NAME+"_0_PDFEigenvectorReweight_Acceptance_"+acceptance_type+"_"+histType
     print histNameCentral
-    centralPDFHist = FILE.Get(histNameCentral)
+    centralPDFHist = file.Get(histNameCentral)
     return centralPDFHist
 
 # Selects the UP PDF Histogram, for the given eigenpair_index
-def GetEigenvectorHistUP(channel, acceptance_type, histType, eigenpair_index):
+def GetEigenvectorHistUP(file, channel, acceptance_type, histType, eigenpair_index):
     index_up = 2*eigenpair_index-1
     histNameUP = channel+"_"+PDF_EIGENVECTOR_NAME+"_"+ str(index_up)+"_PDFEigenvectorReweight_Acceptance_"+acceptance_type+"_"+histType
 
     print histNameUP
-    histUP = FILE.Get(histNameUP)
+    histUP = file.Get(histNameUP)
     return histUP
 
 # Selects the DN PDF Histogram, for the given eigenpair_index
-def GetEigenvectorHistDN(channel, acceptance_type, histType, eigenpair_index):
+def GetEigenvectorHistDN(file, channel, acceptance_type, histType, eigenpair_index):
     index_down = 2*eigenpair_index
     histNameDN = channel+"_"+PDF_EIGENVECTOR_NAME+"_"+ str(index_down)+"_PDFEigenvectorReweight_Acceptance_"+acceptance_type+"_"+histType
     print histNameDN
-    histDN = FILE.Get(histNameDN)
+    histDN = file.Get(histNameDN)
     return histDN
 
 """
@@ -226,9 +227,7 @@ def h2CalcDifferences(h2, h2Expected):
             #outfile.write("""</tr>""")
             
             #outfile.write(htmlTableCloser)
-#outfile.close()
-
-                                                                                                 
+#outfile.close()                                                                                       
     
 if __name__=="__main__":
-    MakePDFSystematicHistograms()
+    MakePDFSystematicHistograms(sys.argv[1])

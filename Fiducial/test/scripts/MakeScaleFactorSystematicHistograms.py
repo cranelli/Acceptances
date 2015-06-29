@@ -6,10 +6,7 @@ from ROOT import TFile
 from ROOT import TH1F
 #from decimal import getcontext
 
-HIST_DIR="../Histograms/LepGammaGammaFinalElandMuUnblindAll_2015_4_19_ScaleFactors_PDFReweights/"
-
-FILELOC =HIST_DIR+"Acceptances_test.root"
-FILE = TFile(FILELOC, 'READ')
+#HIST_DIR="../Histograms/LepGammaGammaFinalElandMuUnblindAll_2015_5_27_ScaleFactor_PU_PDF_Reweights/"
 
 
 CHANNELS=["MuonChannel", "ElectronChannel"]
@@ -19,30 +16,33 @@ SFS={ 'MuonChannel': ["mu_trigSF", "mu_isoSF", "mu_idSF", "ph_idSF"],
     'ElectronChannel': ["el_trigSF", "ph_idSF", "ph_evetoSF"] }
 DIRS = ["UP", "DN"]
 
-OUTFILELOC=HIST_DIR+"ScaleFactorSystematics_test.root"
-OUTFILE=TFile(OUTFILELOC, 'RECREATE')
 
-Header= " \n"
 
-def MakeScaleFactorSystematicHistograms():
+def MakeScaleFactorSystematicHistograms(hist_dir):
+    file_loc =hist_dir+"Acceptances.root"
+    file = TFile(file_loc, 'READ')
+
+    outfile_loc=hist_dir+"ScaleFactorSystematics.root"
+    outfile=TFile(outfile_loc, 'RECREATE')
     
     #list = file.GetListOfKeys()
     for channel in CHANNELS:
         for acceptance_type in ACCEPTANCE_TYPES:
             for dir in DIRS:
                 for hist_type in HIST_TYPES:
-                    MakeIndividualSFSystematicHistograms(channel, acceptance_type, dir, hist_type)
-                    MakeTotalSFSystematicHistograms(channel, acceptance_type, dir, hist_type)
+                    MakeIndividualSFSystematicHistograms(file, outfile, channel, acceptance_type, dir, hist_type)
+                    MakeTotalSFSystematicHistograms(file, outfile, channel, acceptance_type, dir, hist_type)
             
 # Goes over each channel's scale factors, and makes the ScaleFactor Syst Histogram.
 # Just the difference between the two histograms
-def MakeIndividualSFSystematicHistograms(channel, acceptance_type, dir, hist_type):
+def MakeIndividualSFSystematicHistograms(file, outfile, channel, acceptance_type, dir, hist_type):
     expectedHistName=channel+"_Acceptance_"+acceptance_type+"_"+hist_type
-    expectedHist = FILE.Get(expectedHistName)
+    expectedHist = file.Get(expectedHistName)
     for scalefactor in SFS[channel]:
         # Histogram of Acceptances with raised, lopwered ScaleFactor
         scalefactorHistName = channel+"_"+scalefactor+dir+"_Acceptance_"+acceptance_type+"_"+hist_type
-        scalefactorHist = FILE.Get(scalefactorHistName)
+        print scalefactorHistName
+        scalefactorHist = file.Get(scalefactorHistName)
             
         scalefactorSystematicHist = scalefactorHist.Clone(channel+"_"+acceptance_type+"_"+scalefactor+"_ScaleFactorSystematic"+dir+"_"+hist_type)
         scalefactorSystematicHist.Reset("ICE")
@@ -56,20 +56,21 @@ def MakeIndividualSFSystematicHistograms(channel, acceptance_type, dir, hist_typ
 
 # Adds the systematics for each scale factor in quadrature to get the total scale factor systematic.
 # Stores in a Histogram
-def MakeTotalSFSystematicHistograms(channel, acceptance_type, dir, hist_type):
+def MakeTotalSFSystematicHistograms(file, outfile, channel, acceptance_type, dir, hist_type):
     expectedHistName=channel+"_Acceptance_"+acceptance_type+"_"+hist_type
-    expectedHist = FILE.Get(expectedHistName)
+    expectedHist = file.Get(expectedHistName)
 
     scalefactorTotalSystematicHistName=channel+"_"+acceptance_type+"_ScaleFactorTotalSystematic"+dir+"_"+hist_type
     scalefactorTotalSystematicHist = expectedHist.Clone(scalefactorTotalSystematicHistName)
     scalefactorTotalSystematicHist.Reset("ICE")
 
+    # Include Overflow
     for bin_index in range(1, scalefactorTotalSystematicHist.GetNbinsX()+2):
         differences=[]
         for scalefactor in SFS[channel]:
             # Histogram of Acceptances with raised, lowered ScaleFactor
             scalefactorHistName = channel+"_"+scalefactor+dir+"_Acceptance_"+acceptance_type+"_"+hist_type
-            scalefactorHist = FILE.Get(scalefactorHistName)
+            scalefactorHist = file.Get(scalefactorHistName)
             differences.append(CalcAbsDifference(scalefactorHist, expectedHist, bin_index))
             
         scalefactorTotalSyst = sumInQuadrature(differences)
@@ -214,4 +215,4 @@ def h2CalcDifferences(h2, h2Expected):
                                                                                                  
     
 if __name__=="__main__":
-    MakeScaleFactorSystematicHistograms()
+    MakeScaleFactorSystematicHistograms(sys.argv[1])

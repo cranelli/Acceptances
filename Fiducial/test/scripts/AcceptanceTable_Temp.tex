@@ -6,6 +6,7 @@
 \usepackage{graphicx}
 \usepackage{amssymb}
 \usepackage{epstopdf}
+\usepackage{fp}
 \DeclareGraphicsRule{.tif}{png}{.png}{`convert #1 `dirname #1`/`basename #1 .tif`.png}
 
 \begin{document}
@@ -13,8 +14,41 @@
 
 
 %
-% Weighted Combination Gen Events within the Fiducial Region
+% Break Down Between ISR, FSR, and Weighted Total
 %
+
+\begin{table}[htdp]
+\caption{Number of Generated ISR and FSR events within Fiducial Region.  And their Weighted Combination for the expected number of events.}
+\begin{center}
+\begin{tabular}{|l|c|c|c|}
+
+\hline
+& Electron Channel & Muon Channel\\
+\hline
+ISR & & \\
+% 0.319 pb for 1000310 events
+\hphantom{15} Fiducial Cross Section & 5.9 fb & 6.1 fb\\
+\hphantom{15} Generated Events & 18648 & 19112 \\
+\hline
+FSR & & \\
+% 1.84 pb for 1003920 events
+\hphantom{15} Fiducial Cross Section & 3.0 fb & 3.2 fb\\
+\hphantom{15} Generated Events & 1635 & 1753 \\
+\hline
+Weighted Total & & \\
+\hphantom{15} Fiducial Cross Section & 8.9 fb & 9.3 fb \\
+\hphantom{15} Expected Events & 173.5 $\pm$ 1.7 & 180.5 $\pm$ 1.7 \\
+\hline
+
+\end{tabular}
+\end{center}
+\label{default}
+\end{table}
+
+%
+%Gen Events, Split up By Decay Type
+%
+
 
 \begin{table}[htdp]
 \caption{Weighted Combination Gen Events within Fiducial Region}
@@ -30,13 +64,42 @@ $P_t$ Range & Electron Decay & Tau To Electron Decay & Muon Decay & Tau To Muon 
 70+ & WEIGHTED_GEN_ELECTRON_PT4 & WEIGHTED_GEN_TAUTOELECTRON_PT4 &WEIGHTED_GEN_MUON_PT4 &WEIGHTED_GEN_TAUTOMUON_PT4\\
 \hline
 \hline
-Total & WEIGHTED_GEN_ELECTRON_TOTAL &WEIGHTED_GEN_TAUTOELECTRON_TOTAL &WEIGHTED_GEN_MUON_TOTAL &WEIGHTED_GEN_TAUTOMUON_TOTAL\\
+Total & WEIGHTED_GEN_ELECTRON_COUNT &WEIGHTED_GEN_TAUTOELECTRON_COUNT &WEIGHTED_GEN_MUON_COUNT&WEIGHTED_GEN_TAUTOMUON_COUNT\\
 \hline
 
 \end{tabular}
 \end{center}
 \label{default}
 \end{table}
+
+%
+% (1 - f_tau)
+%
+
+\begin{table}[htdp]
+\caption{Generator Tau Events within the Fiducial Region}
+\begin{center}
+\begin{tabular}{|c|c|c|}
+
+\hline
+$P_t$ Range & Electron Channel & Muon Channel\\
+\hline
+
+\hline
+\hline
+Total &\FPeval{\result}{round(WEIGHTED_GEN_TAUTOELECTRON_COUNT/(WEIGHTED_GEN_ELECTRON_COUNT+WEIGHTED_GEN_TAUTOELECTRON_COUNT)*100,2)} $\result$ &\FPeval{\result}{round(WEIGHTED_GEN_TAUTOMUON_COUNT/(WEIGHTED_GEN_MUON_COUNT+WEIGHTED_GEN_TAUTOMUON_COUNT)*100,2)} $\result$ \\
+\hline
+
+\end{tabular}
+\end{center}
+\label{default}
+\end{table}
+
+
+
+%
+% Reco Events Split Up By Channel
+%
 
 \begin{table}[htdp]
 \caption{Weighted Combination Reco Events (w/ SF Weights) Passing Analysis Cuts}
@@ -52,7 +115,7 @@ $P_t$ Range & Electron Channel & Muon Channel \\
 70+ & WEIGHTED_RECO_ELECTRON_PT4 &  WEIGHTED_RECO_MUON_PT4 \\
 \hline
 \hline
-Total& WEIGHTED_RECO_ELECTRON_TOTAL &WEIGHTED_RECO_MUON_TOTAL \\
+Total& WEIGHTED_RECO_ELECTRON_COUNT &WEIGHTED_RECO_MUON_COUNT \\
 \hline
 
 \end{tabular}
@@ -60,25 +123,54 @@ Total& WEIGHTED_RECO_ELECTRON_TOTAL &WEIGHTED_RECO_MUON_TOTAL \\
 \label{default}
 \end{table}%  
 
+%
+% Acceptances 
+%
+
+% With Tau as Signal
+
 \begin{table}[htdp]
 \begin{center}
 \begin{tabular}{|c|c|c|}
 \hline
 $P_t$ Range & Electron Channel & Muon Channel \\
 \hline
-15-25 & ACCEPTANCE_ELECTRON_TAUSIG_PT1&  ACCEPTANCE_MUON_TAUSIG_PT1 \\
-25-40 & ACCEPTANCE_ELECTRON_TAUSIG_PT2&  ACCEPTANCE_MUON_TAUSIG_PT2 \\
-40-70 & ACCEPTANCE_ELECTRON_TAUSIG_PT3&  ACCEPTANCE_MUON_TAUSIG_PT3 \\
-70+ & ACCEPTANCE_ELECTRON_TAUSIG_PT4&  ACCEPTANCE_MUON_TAUSIG_PT4 \\
+15-25 & ACCEPTANCE_ELECTRON_TAUSIG_PT1 $ \pm ^{+TOTAL_SYSTEMATIC_UP_ELECTRON_TAUSIG_PT1}_{- TOTAL_SYSTEMATIC_DN_ELECTRON_TAUSIG_PT1}$ &  ACCEPTANCE_MUON_TAUSIG_PT1$ \pm ^{+TOTAL_SYSTEMATIC_UP_MUON_TAUSIG_PT1}_{- TOTAL_SYSTEMATIC_DN_MUON_TAUSIG_PT1}$ \\
+25-40 & ACCEPTANCE_ELECTRON_TAUSIG_PT2 $ \pm ^{+TOTAL_SYSTEMATIC_UP_ELECTRON_TAUSIG_PT2}_{- TOTAL_SYSTEMATIC_DN_ELECTRON_TAUSIG_PT2}$ &  ACCEPTANCE_MUON_TAUSIG_PT2$ \pm ^{+TOTAL_SYSTEMATIC_UP_MUON_TAUSIG_PT2}_{- TOTAL_SYSTEMATIC_DN_MUON_TAUSIG_PT2}$ \\
+40-70 & ACCEPTANCE_ELECTRON_TAUSIG_PT3 $ \pm ^{+TOTAL_SYSTEMATIC_UP_ELECTRON_TAUSIG_PT3}_{- TOTAL_SYSTEMATIC_DN_ELECTRON_TAUSIG_PT3}$ &  ACCEPTANCE_MUON_TAUSIG_PT3$ \pm ^{+TOTAL_SYSTEMATIC_UP_MUON_TAUSIG_PT3}_{- TOTAL_SYSTEMATIC_DN_MUON_TAUSIG_PT3}$ \\
+70+ & ACCEPTANCE_ELECTRON_TAUSIG_PT4 $ \pm ^{+TOTAL_SYSTEMATIC_UP_ELECTRON_TAUSIG_PT4}_{- TOTAL_SYSTEMATIC_DN_ELECTRON_TAUSIG_PT4}$ &  ACCEPTANCE_MUON_TAUSIG_PT4$ \pm ^{+TOTAL_SYSTEMATIC_UP_MUON_TAUSIG_PT4}_{- TOTAL_SYSTEMATIC_DN_MUON_TAUSIG_PT4}$ \\
 \hline
 \hline
-Total& ACCEPTANCE_ELECTRON_TAUSIG_TOTAL&ACCEPTANCE_MUON_TAUSIG_TOTAL \\
+Total& ACCEPTANCE_ELECTRON_TAUSIG_COUNT $\pm ^{+TOTAL_SYSTEMATIC_UP_ELECTRON_TAUSIG_COUNT}_{- TOTAL_SYSTEMATIC_DN_ELECTRON_TAUSIG_COUNT}$ & ACCEPTANCE_MUON_TAUSIG_COUNT $\pm ^{+TOTAL_SYSTEMATIC_UP_MUON_TAUSIG_COUNT}_{- TOTAL_SYSTEMATIC_DN_MUON_TAUSIG_COUNT}$\\
 \hline
 \end{tabular}
 \end{center}
-\caption{Acceptances as function of Lead Photon $P_T$ with taus as signal}
+\caption{Acceptances as function of Lead Photon $P_T$ with taus as signal, includes statistical and systematic uncertainties}
 \label{default}
 \end{table}%
+
+% With Tau as Bkgd
+\begin{table}[htdp]
+\begin{center}
+\begin{tabular}{|c|c|c|}
+\hline
+$P_t$ Range & Electron Channel & Muon Channel \\
+\hline
+15-25 & ACCEPTANCE_ELECTRON_TAUBKGD_PT1 $ \pm ^{+TOTAL_SYSTEMATIC_UP_ELECTRON_TAUBKGD_PT1}_{- TOTAL_SYSTEMATIC_DN_ELECTRON_TAUBKGD_PT1}$ &  ACCEPTANCE_MUON_TAUBKGD_PT1$ \pm ^{+TOTAL_SYSTEMATIC_UP_MUON_TAUBKGD_PT1}_{- TOTAL_SYSTEMATIC_DN_MUON_TAUBKGD_PT1}$ \\
+25-40 & ACCEPTANCE_ELECTRON_TAUBKGD_PT2 $ \pm ^{+TOTAL_SYSTEMATIC_UP_ELECTRON_TAUBKGD_PT2}_{- TOTAL_SYSTEMATIC_DN_ELECTRON_TAUBKGD_PT2}$ &  ACCEPTANCE_MUON_TAUBKGD_PT2$ \pm ^{+TOTAL_SYSTEMATIC_UP_MUON_TAUBKGD_PT2}_{- TOTAL_SYSTEMATIC_DN_MUON_TAUBKGD_PT2}$ \\
+40-70 & ACCEPTANCE_ELECTRON_TAUBKGD_PT3 $ \pm ^{+TOTAL_SYSTEMATIC_UP_ELECTRON_TAUBKGD_PT3}_{- TOTAL_SYSTEMATIC_DN_ELECTRON_TAUBKGD_PT3}$ &  ACCEPTANCE_MUON_TAUBKGD_PT3$ \pm ^{+TOTAL_SYSTEMATIC_UP_MUON_TAUBKGD_PT3}_{- TOTAL_SYSTEMATIC_DN_MUON_TAUBKGD_PT3}$ \\
+70+ & ACCEPTANCE_ELECTRON_TAUBKGD_PT4 $ \pm ^{+TOTAL_SYSTEMATIC_UP_ELECTRON_TAUBKGD_PT4}_{- TOTAL_SYSTEMATIC_DN_ELECTRON_TAUBKGD_PT4}$ &  ACCEPTANCE_MUON_TAUBKGD_PT4$ \pm ^{+TOTAL_SYSTEMATIC_UP_MUON_TAUBKGD_PT4}_{- TOTAL_SYSTEMATIC_DN_MUON_TAUBKGD_PT4}$ \\
+\hline
+\hline
+Total& ACCEPTANCE_ELECTRON_TAUBKGD_COUNT $\pm ^{+TOTAL_SYSTEMATIC_UP_ELECTRON_TAUBKGD_COUNT}_{- TOTAL_SYSTEMATIC_DN_ELECTRON_TAUBKGD_COUNT}$ & ACCEPTANCE_MUON_TAUBKGD_COUNT $\pm ^{+TOTAL_SYSTEMATIC_UP_MUON_TAUBKGD_COUNT}_{- TOTAL_SYSTEMATIC_DN_MUON_TAUBKGD_COUNT}$\\
+\hline
+\end{tabular}
+\end{center}
+\caption{$\frac{A}{1-f_{\tau}}$ (tau background) as a function of Lead Photon $P_T$, includes statistical and systematic uncertainties}
+\label{default}
+\end{table}%
+
+% Systematics - PDFs, PileUps and Scale Factors
 
 \begin{table}[htdp]
 \caption{Systematic Uncertainties}
@@ -89,47 +181,29 @@ Total& ACCEPTANCE_ELECTRON_TAUSIG_TOTAL&ACCEPTANCE_MUON_TAUSIG_TOTAL \\
 \hline
 Systematic & \multicolumn{2}{c|}{Uncertainty on $A$}\\
 \hline
-Trigger & & \\
-Photon Identification & & \\
-Muon Isolation & & \\
-Muon Identification  & & \\
-Photon Electron Veto & & \\
+Trigger & $^{+ SCALEFACTOR_SYSTEMATIC_ELECTRON_TAUSIG_ELTRIGSF_UP_COUNT }_{-SCALEFACTOR_SYSTEMATIC_ELECTRON_TAUSIG_ELTRIGSF_DN_COUNT }$ &  $^{+ SCALEFACTOR_SYSTEMATIC_MUON_TAUSIG_MUTRIGSF_UP_COUNT }_{- SCALEFACTOR_SYSTEMATIC_MUON_TAUSIG_MUTRIGSF_DN_COUNT} $\\
+Photon Identification & $^{+ SCALEFACTOR_SYSTEMATIC_ELECTRON_TAUSIG_PHIDSF_UP_COUNT }_{-SCALEFACTOR_SYSTEMATIC_ELECTRON_TAUSIG_PHIDSF_DN_COUNT }$ & $^{+ SCALEFACTOR_SYSTEMATIC_MUON_TAUSIG_PHIDSF_UP_COUNT }_{- SCALEFACTOR_SYSTEMATIC_MUON_TAUSIG_PHIDSF_DN_COUNT} $\\
+Muon Isolation & & $^{+ SCALEFACTOR_SYSTEMATIC_MUON_TAUSIG_MUISOSF_UP_COUNT }_{- SCALEFACTOR_SYSTEMATIC_MUON_TAUSIG_MUISOSF_DN_COUNT}$ \\
+Muon Identification  & & $^{+ SCALEFACTOR_SYSTEMATIC_MUON_TAUSIG_MUIDSF_UP_COUNT }_{- SCALEFACTOR_SYSTEMATIC_MUON_TAUSIG_MUIDSF_DN_COUNT}$ \\
+Photon Electron Veto & $^{+ SCALEFACTOR_SYSTEMATIC_ELECTRON_TAUSIG_PHEVETOSF_UP_COUNT }_{-SCALEFACTOR_SYSTEMATIC_ELECTRON_TAUSIG_PHEVETOSF_DN_COUNT }$ & \\
 \hline
-Total Scale Factor Uncertainty & & \\
+Total Scale Factor Uncertainty & $^{+TOTAL_SCALEFACTOR_SYSTEMATIC_UP_ELECTRON_TAUSIG_COUNT}_{- TOTAL_SCALEFACTOR_SYSTEMATIC_DN_ELECTRON_TAUSIG_COUNT}$ &  $^{+TOTAL_SCALEFACTOR_SYSTEMATIC_UP_MUON_TAUSIG_COUNT}_{- TOTAL_SCALEFACTOR_SYSTEMATIC_DN_MUON_TAUSIG_COUNT}$ \\
 \hline
-PDF Sets & $\pm$ PDFSYSTEMATIC_ELECTRON_TAUSIG_SET_TOTAL& $\pm$ PDFSYSTEMATIC_MUON_TAUSIG_SET_TOTAL\\
-PDF Eigenvectors & $^{+ PDFSYSTEMATIC_ELECTRON_TAUSIG_EIGENVECTOR_UP_TOTAL }_{-PDFSYSTEMATIC_ELECTRON_TAUSIG_EIGENVECTOR_DN_TOTAL }$& $^{+ PDFSYSTEMATIC_MUON_TAUSIG_EIGENVECTOR_UP_TOTAL }_{-PDFSYSTEMATIC_MUON_TAUSIG_EIGENVECTOR_DN_TOTAL } $\\
+PDF Sets & $\pm$ PDF_SYSTEMATIC_ELECTRON_TAUSIG_SET_COUNT& $\pm$ PDF_SYSTEMATIC_MUON_TAUSIG_SET_COUNT\\
+PDF Eigenvectors & $^{+ PDF_SYSTEMATIC_ELECTRON_TAUSIG_EIGENVECTOR_UP_COUNT }_{-PDF_SYSTEMATIC_ELECTRON_TAUSIG_EIGENVECTOR_DN_COUNT }$& $^{+ PDF_SYSTEMATIC_MUON_TAUSIG_EIGENVECTOR_UP_COUNT }_{-PDF_SYSTEMATIC_MUON_TAUSIG_EIGENVECTOR_DN_COUNT } $\\
 \hline
-Total PDF Uncertainty & & \\
+Total PDF Uncertainty  & $^{+TOTAL_PDF_SYSTEMATIC_UP_ELECTRON_TAUSIG_COUNT}_{- TOTAL_PDF_SYSTEMATIC_DN_ELECTRON_TAUSIG_COUNT}$ &  $^{+TOTAL_PDF_SYSTEMATIC_UP_MUON_TAUSIG_COUNT}_{- TOTAL_PDF_SYSTEMATIC_DN_MUON_TAUSIG_COUNT}$ \\
 \hline
-Total Pile-up Uncertainty & & \\
+Total Pile-up Uncertainty & $^{+TOTAL_PU_SYSTEMATIC_UP_ELECTRON_TAUSIG_COUNT}_{- TOTAL_PU_SYSTEMATIC_DN_ELECTRON_TAUSIG_COUNT}$ &  $^{+TOTAL_PU_SYSTEMATIC_UP_MUON_TAUSIG_COUNT}_{- TOTAL_PU_SYSTEMATIC_DN_MUON_TAUSIG_COUNT}$ \\
+Total Renormalization Uncertainty & $^{+TOTAL_RENORMALIZATION_SYSTEMATIC_UP_ELECTRON_TAUSIG_COUNT}_{- TOTAL_RENORMALIZATION_SYSTEMATIC_DN_ELECTRON_TAUSIG_COUNT}$ &  $^{+TOTAL_RENORMALIZATION_SYSTEMATIC_UP_MUON_TAUSIG_COUNT}_{- TOTAL_RENORMALIZATION_SYSTEMATIC_DN_MUON_TAUSIG_COUNT}$ \\
+\hline
+Total Factorization Uncertainty & $^{+TOTAL_FACTORIZATION_SYSTEMATIC_UP_ELECTRON_TAUSIG_COUNT}_{- TOTAL_FACTORIZATION_SYSTEMATIC_DN_ELECTRON_TAUSIG_COUNT}$ &  $^{+TOTAL_FACTORIZATION_SYSTEMATIC_UP_MUON_TAUSIG_COUNT}_{- TOTAL_FACTORIZATION_SYSTEMATIC_DN_MUON_TAUSIG_COUNT}$ \\
+\hline
 \hline \hline
-Total Uncertainty on A & & \\
+Total Uncertainty on A & $^{+TOTAL_SYSTEMATIC_UP_ELECTRON_TAUSIG_COUNT}_{- TOTAL_SYSTEMATIC_DN_ELECTRON_TAUSIG_COUNT}$ &  $^{+TOTAL_SYSTEMATIC_UP_MUON_TAUSIG_COUNT}_{- TOTAL_SYSTEMATIC_DN_MUON_TAUSIG_COUNT}$ \\
 \hline
 \end{tabular}
 \end{center}
-\label{default}
-\end{table}%
-
-
-
-\begin{table}[htdp]
-\begin{center}
-\begin{tabular}{|c|c|c|}
-\hline
-$P_t$ Range & Electron Channel & Muon Channel \\
-\hline
-15-25 & ACCEPTANCE_ELECTRON_TAUBKGD_PT1&  ACCEPTANCE_MUON_TAUBKGD_PT1 \\
-25-40 & ACCEPTANCE_ELECTRON_TAUBKGD_PT2&  ACCEPTANCE_MUON_TAUBKGD_PT2 \\
-40-70 & ACCEPTANCE_ELECTRON_TAUBKGD_PT3&  ACCEPTANCE_MUON_TAUBKGD_PT3 \\
-70+ & ACCEPTANCE_ELECTRON_TAUBKGD_PT4&  ACCEPTANCE_MUON_TAUBKGD_PT4 \\
-\hline
-\hline
-Total& ACCEPTANCE_ELECTRON_TAUBKGD_TOTAL&ACCEPTANCE_MUON_TAUBKGD_TOTAL \\
-\hline
-\end{tabular}
-\end{center}
-\caption{Acceptances as function of Lead Photon $P_T$ taus as background}
 \label{default}
 \end{table}%
 

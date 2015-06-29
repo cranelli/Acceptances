@@ -11,11 +11,17 @@ from ROOT import TH2F
 # Calculation of ISR and FSR weights
 lumi = 19400
 
-crossSection_isr=0.319
-crossSection_fsr=1.84
+# Next to Leading Order
+crossSection_isr=0.1592
+crossSection_fsr=1.137
+N_isr = 992414
+N_fsr = 985000
 
-N_isr = 1000310
-N_fsr = 1003920
+# Leading Order
+#crossSection_isr=0.319
+#crossSection_fsr=1.84
+#N_isr = 1000310
+#N_fsr = 1003920
 
 weight1=crossSection_isr*lumi/N_isr
 weight2=crossSection_fsr*lumi/N_fsr

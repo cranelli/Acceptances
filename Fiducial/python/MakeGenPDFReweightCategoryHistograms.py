@@ -2,13 +2,15 @@
 # Includes options for PDF reweighting.
 # Expected to run on root files, that have been through the Common Fiducial Skim
 # Example execution from command line:
-# python MakeGenPDFReweightCategoryHistograms.py /data/users/cranelli/WGamGam/Acceptances/CommonFiducial_wMT_Skim_PDFReweights/job_summer12_WAA_ISR/tree.root test.root
+# python MakeGenPDFReweightCategoryHistograms.py /data/users/cranelli/WGamGam/Acceptances/CommonFiducial_NLO_wMT_Skim_PUWeights_PDFReweights/job_NLO_WAA_ISR/tree.root test.root
 
 import sys
+from collections import namedtuple
 
 from ROOT import TFile
 from ROOT import TTree
 from ROOT import vector
+from ctypes import c_float
 
 import CommonFiducialCutValues
 import particleIdentification
@@ -21,17 +23,33 @@ import histogramBuilder
 TREELOC="EventTree"
 OUTDIR="../test/Histograms/"
 
-# Standard Histograms (No Reweighting)
-DO_NO_REWEIGHT=True
+# Unweighted Histograms (No Reweighting, No PileUP)
+DO_UNWEIGHTED=True
+
+#PileUp Reweighting
+DO_PILEUP_UPDN=True
+PILEUP_NUMS=["5", "10"]
+PileUpUpDnStruct = namedtuple ('PileUpUpDn', 'up down')
+
+#Factorization Reweighting
+DO_FACTORIZATION_REWEIGHT=True
+FACTORIZATION_VARIATIONS=["Half", "Double"]
+
+#Renormalization Reweighting
+DO_RENORMALIZATION_REWEIGHT=True
+RENORMALIZATION_VARIATIONS=["Half", "Double"]
 
 #Central PDF Reweighting
 DO_CENTRAL_PDF_REWEIGHT=True
-PDF_NAMES=['cteq6l1', 'MSTW2008lo68cl', 'cteq66'] #cteq6l1 is the original
-ORIG_PDF_NAME = 'cteq6l1'
+PDF_NAMES=['NNPDF30_nlo_nf_5_pdfas', 'CT10nlo', 'MSTW2008nlo68cl'] #NNPDF30_nlo_nf_5_pdfas is the original
+ORIG_PDF_NAME = 'NNPDF30_nlo_nf_5_pdfas'
+#PDF_NAMES=['cteq6l1', 'MSTW2008lo68cl', 'cteq66'] #cteq6l1 is the original
+#ORIG_PDF_NAME = 'cteq6l1'
 
 #Eigenvector PDF Reweighting
 DO_EIGENVECTOR_PDF_REWEIGHT=True
-EIGENVECTOR_PDF_NAME= 'cteq66'
+EIGENVECTOR_PDF_NAME= 'NNPDF30_nlo_nf_5_pdfas'
+#EIGENVECTOR_PDF_NAME= 'cteq66'
 
 # PdgIds
 ELECTRON_PDGID = 11
@@ -64,10 +82,17 @@ def MakeGenPDFReweightCategoryHistograms(inFileLoc="job_summer12_WAA_ISR/ggtree_
     print "Number of Entries", nentries
 
     # Holder for PDF Pair Information
-    xfx_pair_dict = GetPDFPairInfo(tree)
+    if DO_CENTRAL_PDF_REWEIGHT or DO_EIGENVECTOR_PDF_REWEIGHT:
+    #if DO_CENTRAL_PDF_REWEIGHT:
+        xfx_pair_dict = GetPDFPairInfo(tree)
+    
+    #Holder for Pile-up UP DONW variation information.
+    if DO_PILEUP_UPDN:
+        pileup_up_dn_dict = GetPileUpUPDNInfo(tree)
         
     # Loop Over Events
     for i in range(0, nentries):
+    #for i in range(0, 1000):
         if(i%1000==0): print i
         tree.GetEntry(i)
         
@@ -86,24 +111,36 @@ def MakeGenPDFReweightCategoryHistograms(inFileLoc="job_summer12_WAA_ISR/ggtree_
         tau_muons=parentCuts.selectOnParentID(muons, TAU_PDGID)
         
         #if len(taus)>0 :
-        #    print len(taus),
-        #    print len(w_taus),
-        #    print len(tau_electrons),
-        #    print len(tau_muons)
         
         # Identify the Decay Type
         decayType = SelectDecayType(w_electrons, w_muons, w_taus, tau_electrons, tau_muons)
+        #photonLocation = SelectPhotonLocation(photons)
+        #decayType = decayType + "_"+photonLocation
         
-        # Make Regular Histograms (No Reweighting)
-        MakeBasicHistograms(decayType, photons)
+        # Make Regular Histograms
+        MakeBasicHistograms(decayType, photons, tree)
+        
+        # Make Histograms without any weights (NO PileUp)
+        if DO_UNWEIGHTED:
+            MakeUnweightedHistograms(decayType, photons, tree)
+        
+        if DO_PILEUP_UPDN:
+            MakePileUpUPDNHistograms(pileup_up_dn_dict, decayType, photons, tree)
+        
+        if DO_FACTORIZATION_REWEIGHT:
+            MakeFactorizationReweightHistograms(decayType, photons, tree)
+
+        if DO_RENORMALIZATION_REWEIGHT:
+            MakeRenormalizationReweightHistograms(decayType, photons, tree)
 
         # Calculate Central PDF Reweight
         if DO_CENTRAL_PDF_REWEIGHT:
-            MakeCentralPDFReweightHistograms(xfx_pair_dict, decayType, photons)
+            MakeCentralPDFReweightHistograms(xfx_pair_dict, decayType, photons, tree)
         
         # Calculate Eigenvector PDF Reweight, for all of the eigenvectors in "EIGENVECTOR_PDF_NAME"
         if DO_EIGENVECTOR_PDF_REWEIGHT:
-            MakeEigenvectorPDFReweightHistograms(xfx_pair_dict, decayType, photons)
+            MakeEigenvectorPDFReweightHistograms(xfx_pair_dict, decayType, photons, tree)
+
            
     outFile.Write()
 
@@ -118,31 +155,98 @@ def GetPDFPairInfo(tree):
         tree.SetBranchAddress('xfx_second_'+pdf_name, xfx_pair_dict[pdf_name][1])
     return xfx_pair_dict
 
-# Standard Generator Histograms, weight is one.
-def MakeBasicHistograms(decayType, photons):
+# Returns a dictionary, for each alternative pileup weight, with a link to it's original value,
+# 1 sigma UP, and 1 sigma down.
+
+def GetPileUpUPDNInfo(tree):
+    pileup_up_dn_dict = {}
+    for pileup_num in PILEUP_NUMS:
+        print pileup_num
+        pileup_up_dn_dict[pileup_num]=PileUpUpDnStruct(c_float(),c_float())
+        tree.SetBranchAddress("PUWeightUP"+pileup_num,pileup_up_dn_dict[pileup_num].up)
+        tree.SetBranchAddress("PUWeightDN"+pileup_num,pileup_up_dn_dict[pileup_num].down)
+    return pileup_up_dn_dict
+
+
+# Standard Generator Histograms, weight is just the PU weight.
+def MakeBasicHistograms(decayType, photons, tree):
+    pileup_weight = tree.PUWeight
+    weight = pileup_weight
+    prefix = decayType #+ "_PUweight"
+    MakeHistograms(prefix, photons, weight)
+
+# Unweighted Generator Histograms, weight is one.
+def MakeUnweightedHistograms(decayType, photons, tree):
     weight =1
     prefix = decayType + "_unweighted"
     MakeHistograms(prefix, photons, weight)
 
 
+# Make the Histograms for the number of PileUp
+# weighted n% up or down.
+def MakePileUpUPDNHistograms(pileup_up_dn_dict, decayType, photons, tree):
+    directions=['UP', 'DN']
+    pileup_weight=tree.PUWeight
+    for pileup_num in PILEUP_NUMS:
+        for dir in directions:
+            prefix = decayType+"_PU"+pileup_num+dir+"_PileupReweight"
+            pileup_reweight= CalcPileupReweight(pileup_up_dn_dict, pileup_weight, pileup_num, dir)
+            weight = pileup_weight*pileup_reweight
+            MakeHistograms(prefix, photons, weight)
+
+#Makes the Histograms for the Factorization Reweightings.
+def MakeFactorizationReweightHistograms(decayType, photons, tree):
+    pileup_weight = tree.PUWeight
+    for factorization_variation in FACTORIZATION_VARIATIONS:
+        factorization_reweight = calcFactorizationReweight(tree, factorization_variation)
+        #print factorization_reweight
+        weight = pileup_weight * factorization_reweight
+        prefix =decayType + "_"+factorization_variation+"_Factorization"
+        MakeHistograms(prefix, photons, weight)
+
+#Makes the Histograms for the Renormalization Reweightings.
+def MakeRenormalizationReweightHistograms(decayType, photons, tree):
+    pileup_weight = tree.PUWeight
+    for renormalization_variation in RENORMALIZATION_VARIATIONS:
+        renormalization_reweight = calcRenormalizationReweight(tree, renormalization_variation)
+        #print renormalization_reweight
+        weight = pileup_weight * renormalization_reweight
+        prefix =decayType + "_"+renormalization_variation+"_Renormalization"
+        MakeHistograms(prefix, photons, weight)
+
+
 # Makes the Histograms for the Central PDF Reweightings
 # Uses the parton distribution functions stored in xfx_pair_dict to calculate
 # the reweighting from the central value of the original pdf to the new pdf.
-def MakeCentralPDFReweightHistograms(xfx_pair_dict, decayType, photons):
+def MakeCentralPDFReweightHistograms(xfx_pair_dict, decayType, photons, tree):
+    pileup_weight = tree.PUWeight
     for pdf_name in PDF_NAMES:
         prefix = decayType+"_"+pdf_name+"_PDFReweight"
-        reweight = calcPDFReweight(xfx_pair_dict, ORIG_PDF_NAME, pdf_name)
-        MakeHistograms(prefix, photons, reweight)
+        pdf_reweight = calcPDFReweight(xfx_pair_dict, ORIG_PDF_NAME, pdf_name)
+        weight = pileup_weight * pdf_reweight
+        MakeHistograms(prefix, photons, weight)
 
 # Makes the Histograms for the Eigenvector PDF Reweightings
 # Uses the pdf info stored in xfx_pair_dict, to calculate
 # the reweighting from a PDF sets central value to one of
 # it's eigenvector values.
-def MakeEigenvectorPDFReweightHistograms(xfx_pair_dict, decayType, photons):
+
+def MakeEigenvectorPDFReweightHistograms(xfx_pair_dict, decayType, photons, tree):
+    pileup_weight = tree.PUWeight
     for pdf_eigenvector_index in range(0, xfx_pair_dict[EIGENVECTOR_PDF_NAME][0].size()):
         prefix=decayType + "_"+EIGENVECTOR_PDF_NAME+"_"+str(pdf_eigenvector_index)+"_PDFEigenvectorReweight"
         eigenvector_reweight = calcPDFEigenvectorReweight(xfx_pair_dict, EIGENVECTOR_PDF_NAME, pdf_eigenvector_index)
-        MakeHistograms(prefix, photons, eigenvector_reweight)
+        weight = pileup_weight * eigenvector_reweight
+        MakeHistograms(prefix, photons, weight)
+
+#def MakeEigenvectorPDFReweightHistograms(xfx_pair_dict, decayType, photons, tree):
+#    pileup_weight = tree.PUWeight
+#    for pdf_eigenvector_index in range(0, xfx_pair_dict[EIGENVECTOR_PDF_NAME][0].size()):
+#        prefix=decayType + "_"+EIGENVECTOR_PDF_NAME+"_"+str(pdf_eigenvector_index)+"_PDFEigenvectorReweight"
+#        eigenvector_reweight = calcPDFEigenvectorReweight(xfx_pair_dict, EIGENVECTOR_PDF_NAME, pdf_eigenvector_index)
+#        weight = pileup_weight * eigenvector_reweight
+#        MakeHistograms(prefix, photons, weight)
+
 
 # Distinguish between the different Leptonic Decay types of the W
 # Also diferentiating between tau to e and tau to mu.
@@ -160,15 +264,96 @@ def SelectDecayType(w_electrons, w_muons, w_taus, tau_electrons, tau_muons):
     if len(tau_muons) == REQ_NUM_LEPTONS:
         return "TauToMuonDecay"
 
+    return "OtherDecay"
+
+
 
 # Make Count, Lead Photon Pt, and other Histograms
-def MakeHistograms(prefix, photons, reweight):
-    histogramBuilder.fillCountHistograms(prefix, reweight)
+def MakeHistograms(prefix, photons, weight):
     leadPhoton = selectLead(photons)
-    histogramBuilder.fillPtHistograms(prefix, leadPhoton.Pt(), reweight)
-    histogramBuilder.fillPtCategoryHistograms(prefix, leadPhoton.Pt(), reweight)
+    
+    histogramBuilder.fillPtHistograms(prefix, leadPhoton.Pt(), weight)
+    histogramBuilder.fillPtCategoryHistograms(prefix, leadPhoton.Pt(), weight)
+
+    if(leadPhoton.Pt > 40):
+        histogramBuilder.fillCountHistograms(prefix, weight)
     #histogramBuilder.fillPhotonLocationCategoryHistograms(decay, findPhotonLocations(photons), reweight)
     #histogramBuilder.fillPtAndLocationCategoryHistograms(decay, findPhotonLocations(photons), leadPhoton.Pt(), reweight)
+
+# Calculate PileUp reweighting
+def CalcPileupReweight(pileup_up_dn_dict, orig_pileup_weight, pileup_num, dir):
+    new_pileup_weight=orig_pileup_weight
+
+    if dir == 'UP':
+        new_pileup_weight = pileup_up_dn_dict[pileup_num].up.value
+    if dir == 'DN':
+        new_pileup_weight = pileup_up_dn_dict[pileup_num].down.value
+
+    pileup_reweight=new_pileup_weight/orig_pileup_weight
+    return pileup_reweight
+
+#Calculate Factorization reweighting, weights store in lhe external branch.
+def calcFactorizationReweight(tree, factorization_variation):
+    
+    orig_lhe_weight_index=0 # corresponds with id 1001
+    orig_weight = tree.LHEWeight_weights[orig_lhe_weight_index]
+    #print tree.LHEWeight_ids[orig_lhe_weight_index], tree.LHEWeight_weights[orig_lhe_weight_index]
+    
+    # Select the Index for the New Weight
+    new_lhe_weight_index = orig_lhe_weight_index
+    if(factorization_variation == "Double"):
+        new_lhe_weight_index=1 # Corresponds with id 1002
+    
+    if(factorization_variation == "Half"):
+        new_lhe_weight_index=2 # Corresponds with id 1004
+
+    # print tree.LHEWeight_ids[new_lhe_weight_index], tree.LHEWeight_weights[new_lhe_weight_index]
+
+
+    new_weight = tree.LHEWeight_weights[new_lhe_weight_index]
+    factorization_reweight = new_weight / orig_weight
+
+    return factorization_reweight
+
+#Calculate Renormalization reweighting, weights store in lhe external branch.
+def calcRenormalizationReweight(tree, renormalization_variation):
+
+    orig_lhe_weight_index=0 # corresponds with id 1001
+    orig_weight = tree.LHEWeight_weights[orig_lhe_weight_index]
+    #print tree.LHEWeight_ids[orig_lhe_weight_index], tree.LHEWeight_weights[orig_lhe_weight_index]
+    
+    # Select the Index for the New Weight
+    new_lhe_weight_index = orig_lhe_weight_index
+    if(renormalization_variation == "Double"):
+        new_lhe_weight_index=3 # Corresponds with id 1004
+    
+    if(renormalization_variation == "Half"):
+        new_lhe_weight_index=6 # Corresponds with id 1007
+
+    #print tree.LHEWeight_ids[new_lhe_weight_index], tree.LHEWeight_weights[new_lhe_weight_index]
+
+    new_weight = tree.LHEWeight_weights[new_lhe_weight_index]
+    renormalization_reweight = new_weight / orig_weight
+    
+    return renormalization_reweight
+
+
+def calcPDFReweight(xfx_pair_dict, orig_pdf_name, pdf_name):
+    reweight =1;
+    
+    # Central Value is the 0 index in the vector
+    orig_xfx_first = xfx_pair_dict[orig_pdf_name][0]
+    orig_xfx_second = xfx_pair_dict[orig_pdf_name][1]
+    orig_central_xfx_first = orig_xfx_first[0]
+    orig_central_xfx_second = orig_xfx_second[0]
+    
+    new_xfx_first = xfx_pair_dict[pdf_name][0]
+    new_xfx_second = xfx_pair_dict[pdf_name][1]
+    new_central_xfx_first = new_xfx_first[0]
+    new_central_xfx_second = new_xfx_second[0]
+    
+    reweight = (new_central_xfx_first * new_central_xfx_second) / (orig_central_xfx_first*orig_central_xfx_second)
+    return reweight
 
 # Calculate PDF reweighting
 def calcPDFReweight(xfx_pair_dict, orig_pdf_name, pdf_name):
@@ -273,24 +458,25 @@ def selectSubLead(particles):
     return subLead
 
 #Separate Lead and Sub Lead Photons between Barrel and EndCap.
-def findPhotonLocations(photons):
+def SelectPhotonLocation(photons):
 
     photonLead = selectLead(photons)
     photonSubLead = selectSubLead(photons)
-    barrelMaxEta=1.44
-    endCapMinEta=1.57
+    #barrelMaxEta=1.44
+    #endCapMinEta=1.57
+    endCapBarrelEta=1.5
     
     #Both in Barrel
-    if abs(photonLead.Eta()) < barrelMaxEta and abs(photonSubLead.Eta()) < barrelMaxEta:
-        return 0
+    if abs(photonLead.Eta()) < endCapBarrelEta and abs(photonSubLead.Eta()) < endCapBarrelEta:
+        return "EBEB"
     #Lead in Barrel Sub in EndCap
-    if abs(photonLead.Eta()) < barrelMaxEta and abs(photonSubLead.Eta()) > endCapMinEta:
-        return 1
+    if abs(photonLead.Eta()) < endCapBarrelEta and abs(photonSubLead.Eta()) > endCapBarrelEta:
+        return "EBEE"
     #Lead in EndCap Sub in Barrel
-    if abs(photonLead.Eta()) >endCapMinEta and abs(photonSubLead.Eta()) < barrelMaxEta:
-        return 2
+    if abs(photonLead.Eta()) >endCapBarrelEta and abs(photonSubLead.Eta()) < endCapBarrelEta:
+        return "EEEB"
     #otherwise
-    return 3
+    return "EEEE"
 
 # Distinguish between the different Leptonic Decay types of the W, and Makes Histograms
 #def MakeHistogramsByDecayType(wChildren, suffix, photons, reweight):
