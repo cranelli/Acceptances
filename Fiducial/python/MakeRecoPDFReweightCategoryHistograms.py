@@ -2,8 +2,7 @@
 # RECO values.  Splits signal events between the different
 # channels and our different categories.
 # 
-# Example execution from command line:
-# python MakeRecoPDFReweightCategoryHistograms.py /data/users/cranelli/WGamGam/Acceptances/AnalysisRECOCuts_Skim/LepGammaGammaFinalEl_2015_03_31_ScaleFactors_PDFReweights/job_summer12_WAA_ISR/tree.root test.root
+# Example python MakeRecoPDFReweightCategoryHistograms.py /data/users/cranelli/WGamGam/ReFilterFinalNtuple/NLO_LepGammaGammaFinalElandMu_2015_6_26_ScaleFactors_PDFReweights/job_NLO_WAA_ISR/tree.root test.root
 #
 
 import sys
@@ -41,16 +40,31 @@ ELECTRON_CHANNEL_SCALEFACTORS=['el_trigSF', 'ph_idSF', 'ph_evetoSF']
 MUON_CHANNEL_SCALEFACTORS=['mu_trigSF', 'mu_isoSF', 'mu_idSF', 'ph_idSF']
 ScaleFactorOrigUpDnStruct = namedtuple ('ScaleFactorOrigUpDn', 'orig up down')
 
+# With PileUp Weight vaired to the PUWeightUP/DN10 values
+DO_PILEUP_UPDN=True
+PILEUP_NUMS=["5", "10"]
+PileUpUpDnStruct = namedtuple ('PileUpUpDn', 'up down')
+
+#Factorization Reweighting
+DO_FACTORIZATION_REWEIGHT=True
+FACTORIZATION_VARIATIONS=["Half", "Double"]
+
+#Renormalization Reweighting
+DO_RENORMALIZATION_REWEIGHT=True
+RENORMALIZATION_VARIATIONS=["Half", "Double"]
 
 #Central PDF Reweighting
 DO_CENTRAL_PDF_REWEIGHT=True
-PDF_NAMES=['cteq6l1', 'MSTW2008lo68cl', 'cteq66'] #cteq6l1 is the original
-ORIG_PDF_NAME = 'cteq6l1'
+PDF_NAMES=['NNPDF30_nlo_nf_5_pdfas', 'CT10nlo', 'MSTW2008nlo68cl'] #NNPDF30_nlo_nf_5_pdfas is the original
+ORIG_PDF_NAME = 'NNPDF30_nlo_nf_5_pdfas'
 PDFPairStruct = namedtuple ('PDFPairStruct', 'first second')
 
 #Eigenvector PDF Reweighting
 DO_EIGENVECTOR_PDF_REWEIGHT=True
-EIGENVECTOR_PDF_NAME= 'cteq66'
+EIGENVECTOR_PDF_NAME= 'NNPDF30_nlo_nf_5_pdfas'
+#EIGENVECTOR_PDF_NAME= 'cteq66'
+
+
 
 
 #####################################
@@ -69,6 +83,10 @@ def MakeRecoPDFReweightCategoryHistograms(inFileLoc="", outFileName="test.root")
     #Holder for ScaleFactor UP DN Information
     if DO_SCALEFACTORS_UPDN:
         scalefactor_up_dn_dict = GetScaleFactorUPDNInfo(tree)
+    
+    #Holder for PileUp UP DN Information
+    if DO_PILEUP_UPDN:
+        pileup_up_dn_dict = GetPileUpUPDNInfo(tree)
     
     # Holder for PDF Pair Information
     if DO_CENTRAL_PDF_REWEIGHT or DO_EIGENVECTOR_PDF_REWEIGHT :
@@ -91,7 +109,19 @@ def MakeRecoPDFReweightCategoryHistograms(inFileLoc="", outFileName="test.root")
         # Caclulate UP DN Scale Factors
         if DO_SCALEFACTORS_UPDN:
             MakeRecoHistograms_ScaleFactorsUPDN(scalefactor_up_dn_dict, tree)
-        
+
+        #Calculate UP DN PileUp
+        if DO_PILEUP_UPDN:
+            MakeRecoHistograms_PileUpUPDN(pileup_up_dn_dict, tree)
+
+        #Calculate Factorization Variations
+        if DO_FACTORIZATION_REWEIGHT:
+            MakeRecoHistograms_FactorizationVariations(tree)
+
+        #Calculate Renormalization Variations
+        if DO_RENORMALIZATION_REWEIGHT:
+            MakeRecoHistograms_RenormalizationVariations(tree)
+
         #Calculate Central PDF Reweight (includes scale factor)
         if DO_CENTRAL_PDF_REWEIGHT:
             MakeRecoHistograms_CentralPDFReweight(xfx_pair_dict, tree)
@@ -117,6 +147,18 @@ def GetScaleFactorUPDNInfo(tree):
         tree.SetBranchAddress(scalefactor_name+'DN',scalefactor_up_dn_dict[scalefactor_name].down)
     return scalefactor_up_dn_dict
 
+# Returns a dictionary, for each alternative pileup weight, with a link to it's original value,
+# 1 sigma UP, and 1 sigma down.
+
+def GetPileUpUPDNInfo(tree):
+    pileup_up_dn_dict = {}
+    for pileup_num in PILEUP_NUMS:
+        print pileup_num
+        pileup_up_dn_dict[pileup_num]=PileUpUpDnStruct(c_float(),c_float())
+        tree.SetBranchAddress("PUWeightUP"+pileup_num,pileup_up_dn_dict[pileup_num].up)
+        tree.SetBranchAddress("PUWeightDN"+pileup_num,pileup_up_dn_dict[pileup_num].down)
+    return pileup_up_dn_dict
+
 
 # Returns a dictionary, for each pdf set, with a link to the first and second parton
 # distribution function, xfx, information from the root tree.
@@ -141,7 +183,19 @@ def MakeRecoHistograms_Unweighted(tree):
 def MakeBasicRecoHistograms(tree):
     suffix = "ScaleFactor"
     scalefactor = CalcScaleFactor(tree)
-    MakeHistogramsByChannelType(tree, suffix, scalefactor)
+    pileup_weight = tree.PUWeight
+    weight = scalefactor*pileup_weight
+    MakeHistogramsByChannelType(tree, suffix, weight)
+    # Adding Code to also Make Histograms by Photon Location
+    if(tree.isEB_leadph12 and tree.isEB_sublph12):
+        suffix= "EBEB_"+suffix;
+        MakeHistogramsByChannelType(tree, suffix, weight)
+    if(tree.isEB_leadph12 and tree.isEE_sublph12):
+        suffix= "EBEE_"+suffix;
+        MakeHistogramsByChannelType(tree, suffix, weight)
+    if(tree.isEE_leadph12 and tree.isEB_sublph12):
+        suffix= "EEEB_"+suffix;
+        MakeHistogramsByChannelType(tree, suffix, weight)
 
 
 #  Scale Factor values varied 1 Sigma UP or 1 Sigma DN.
@@ -157,14 +211,36 @@ def MakeRecoHistograms_ScaleFactorsUPDN(scalefactor_up_dn_dict, tree):
             for scalefactor_name in MUON_CHANNEL_SCALEFACTORS:
                 ReweightScaleFactorAndMakeHistograms(scalefactor_up_dn_dict, scalefactor_name, dir, tree)
 
-# Makes new
+# Reweights accordingly for the new scale factor
 def ReweightScaleFactorAndMakeHistograms(scalefactor_up_dn_dict, scalefactor_name, dir, tree):
-    scalefactor=CalcScaleFactor(tree)
+    orig_scalefactor=CalcScaleFactor(tree)
     scalefactor_updn_suffix = "ScaleFactor_"+scalefactor_name+dir
     scalefactor_reweight = CalcScaleFactorReweight(scalefactor_up_dn_dict, scalefactor_name, dir, tree)
-    weight = scalefactor*scalefactor_reweight
+    scalefactor = orig_scalefactor*scalefactor_reweight
+    pileup_weight = tree.PUWeight
+    weight = scalefactor*pileup_weight
     MakeHistogramsByChannelType(tree, scalefactor_updn_suffix, weight)
 
+# Pile Up weights varied 1 Sigma Up or 1 Sigam DN
+def MakeRecoHistograms_PileUpUPDN(pileup_up_dn_dict, tree):
+    directions = ['UP', 'DN']
+    for dir in directions:
+        for pileup_num in PILEUP_NUMS:
+                WeightNewPileUpAndMakeHistograms(pileup_up_dn_dict, pileup_num, dir, tree)
+
+
+# Calculates weight using the new pileup weight
+def WeightNewPileUpAndMakeHistograms(pileup_up_dn_dict, pileup_num, dir, tree):
+    scalefactor=CalcScaleFactor(tree)
+    
+    pileup_updn_suffix = "PUWeight_"+pileup_num+dir
+    if dir == 'UP':
+        new_pileup_weight = pileup_up_dn_dict[pileup_num].up.value
+    if dir == 'DN':
+        new_pileup_weight = pileup_up_dn_dict[pileup_num].down.value
+
+    weight = scalefactor*new_pileup_weight
+    MakeHistogramsByChannelType(tree, pileup_updn_suffix, weight)
 
 
 # Makes the Reco Histograms for the Central PDF Reweightings. Uses the stored parton distribution
@@ -172,24 +248,59 @@ def ReweightScaleFactorAndMakeHistograms(scalefactor_up_dn_dict, scalefactor_nam
 # Includes ScaleFactor
 def MakeRecoHistograms_CentralPDFReweight(xfx_pair_dict, tree):
     scalefactor = CalcScaleFactor(tree)
+    pileup_weight = tree.PUWeight
     for pdf_name in PDF_NAMES:
         pdf_suffix = pdf_name+"_PDFReweight"
         pdf_reweight = calcPDFReweight(xfx_pair_dict, ORIG_PDF_NAME, pdf_name)
         suffix = "ScaleFactor_" + pdf_suffix
-        weight = scalefactor * pdf_reweight
+        weight = scalefactor * pileup_weight*pdf_reweight
         MakeHistogramsByChannelType(tree, suffix, weight)
+
+
+# Makes the Reco Histograms for the Factorization Reweightings. Uses the weights stored 
+# in the lhe external information.
+# Includes scale factor and PileUp
+def MakeRecoHistograms_FactorizationVariations(tree):
+    scalefactor = CalcScaleFactor(tree)
+    pileup_weight = tree.PUWeight
+    for factorization_variation in FACTORIZATION_VARIATIONS:
+        factorization_reweight = calcFactorizationReweight(tree, factorization_variation)
+        weight = scalefactor * pileup_weight * factorization_reweight
+
+        factorization_suffix = factorization_variation+"_Factorization"
+        suffix = "ScaleFactor_" + factorization_suffix
+
+        MakeHistogramsByChannelType(tree, suffix, weight)
+
+# Makes the Reco Histograms for the Renormalization Reweightings. Uses the weights stored
+# in the lhe external information.
+# Includes scale factor and PileUp
+def MakeRecoHistograms_RenormalizationVariations(tree):
+    scalefactor = CalcScaleFactor(tree)
+    pileup_weight = tree.PUWeight
+    for renormalization_variation in RENORMALIZATION_VARIATIONS:
+        
+        renormalization_reweight = calcRenormalizationReweight(tree, renormalization_variation)
+        weight = scalefactor * pileup_weight * renormalization_reweight
+        
+        renormalization_suffix = renormalization_variation+"_Renormalization"
+        suffix = "ScaleFactor_" + renormalization_suffix
+        
+        MakeHistogramsByChannelType(tree, suffix, weight)
+
 
 # Makes the Histograms for the Eigenvector PDF Reweightings. Uses the stord pdf info to calculate
 # the reweighting from a PDF set's central value to one of it's eigenvector values.
 #Includes ScaleFactor
 def MakeRecoHistograms_EigenvectorPDFReweight(xfx_pair_dict, tree):
     scalefactor = CalcScaleFactor(tree)
+    pileup_weight = tree.PUWeight
     # Loop Over each Eigenvector element in the xfx vector.
     for eigenvector_index in range(0, xfx_pair_dict[EIGENVECTOR_PDF_NAME][0].size()):
         pdf_eigenvector_suffix = EIGENVECTOR_PDF_NAME+"_"+str(eigenvector_index)+"_PDFEigenvectorReweight"
         pdf_eigenvector_reweight = calcPDFEigenvectorReweight(xfx_pair_dict, EIGENVECTOR_PDF_NAME, eigenvector_index)
         suffix = "ScaleFactor_" + pdf_eigenvector_suffix
-        weight = scalefactor * pdf_eigenvector_reweight
+        weight = scalefactor * pileup_weight*pdf_eigenvector_reweight
         MakeHistogramsByChannelType(tree, suffix, weight)
 
 # Distinguish between the different Leptonic Signal Channels, and make Histograms
@@ -205,11 +316,14 @@ def MakeHistogramsByChannelType(tree, suffix, weight):
 # if(not IsElectronChannel(tree) and not IsMuonChannel(tree)):
 
 def MakeHistograms(tree, channel, weight):
-    histogramBuilder.fillCountHistograms(channel, weight)
+    
     histogramBuilder.fillPtHistograms(channel, tree.pt_leadph12, weight)
     histogramBuilder.fillPtCategoryHistograms(channel, tree.pt_leadph12, weight)
-# histogramBuilder.fillPhotonLocationCategoryHistograms(channel+"_weighted", findPhotonLocations(tree),weight)
-#   histogramBuilder.fillPtAndLocationCategoryHistograms(channel+"_weighted", findPhotonLocations(tree),tree.pt_leadph12, weight)
+    # Hack to Change Selection to Photon Pt > 40
+    if(tree.pt_leadph12 > 40):
+        histogramBuilder.fillCountHistograms(channel, weight)
+    # histogramBuilder.fillPhotonLocationCategoryHistograms(channel+"_weighted", findPhotonLocations(tree),weight)
+    # histogramBuilder.fillPtAndLocationCategoryHistograms(channel+"_weighted", findPhotonLocations(tree),tree.pt_leadph12, weight)
 
 
 #Identify whether the event is in the electron channel
@@ -225,10 +339,10 @@ def CalcScaleFactor(tree):
     scalefactor = 1
     
     if(IsElectronChannel(tree)):
-        scalefactor = tree.el_trigSF*tree.ph_idSF*tree.ph_evetoSF*tree.PUWeight
+        scalefactor = tree.el_trigSF*tree.ph_idSF*tree.ph_evetoSF
     
     if(IsMuonChannel(tree)):
-        scalefactor = tree.mu_trigSF*tree.mu_isoSF*tree.mu_idSF*tree.ph_idSF*tree.PUWeight
+        scalefactor = tree.mu_trigSF*tree.mu_isoSF*tree.mu_idSF*tree.ph_idSF
         
     return scalefactor
 
@@ -265,6 +379,45 @@ def calcPDFReweight(xfx_pair_dict, orig_pdf_name, pdf_name):
     
     reweight = (new_central_xfx_first * new_central_xfx_second) / (orig_central_xfx_first*orig_central_xfx_second)
     return reweight
+
+#Calculate Reweighting from Factorization of 1.0 to Variation value.
+#Weights stored in lhe external branch
+def calcFactorizationReweight(tree, factorization_variation):
+    orig_lhe_weight_index=0 # corresponds with id 1001
+    orig_weight = tree.LHEWeight_weights[orig_lhe_weight_index]
+    
+    # Select the Index for the New Weight
+    new_lhe_weight_index = orig_lhe_weight_index
+    if(factorization_variation == "Double"):
+        new_lhe_weight_index=1 # Corresponds with id 1002
+    
+    if(factorization_variation == "Half"):
+        new_lhe_weight_index=2 # Corresponds with id 1004
+    
+    new_weight = tree.LHEWeight_weights[new_lhe_weight_index]
+    factorization_reweight = new_weight / orig_weight
+
+    return factorization_reweight
+
+#Calculate Renormalization reweighting, weights store in lhe external branch.
+def calcRenormalizationReweight(tree, renormalization_variation):
+    orig_lhe_weight_index=0 # corresponds with id 1001
+    orig_weight = tree.LHEWeight_weights[orig_lhe_weight_index]
+    
+    # Select the Index for the New Weight
+    new_lhe_weight_index = orig_lhe_weight_index
+    if(renormalization_variation == "Double"):
+        new_lhe_weight_index=3 # Corresponds with id 1004
+    
+    if(renormalization_variation == "Half"):
+        new_lhe_weight_index=6 # Corresponds with id 1007
+    
+    new_weight = tree.LHEWeight_weights[new_lhe_weight_index]
+    renormalization_reweight = new_weight / orig_weight
+    
+    return renormalization_reweight
+
+
 
 #Calculate Reweighting from central value of a set, to up-down eigenvector values of the set.  
 def calcPDFEigenvectorReweight(xfx_pair_dict, EIGENVECTOR_PDF_NAME, eigenvector_index):

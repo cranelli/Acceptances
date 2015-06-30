@@ -275,7 +275,7 @@ def MakeHistograms(prefix, photons, weight):
     histogramBuilder.fillPtHistograms(prefix, leadPhoton.Pt(), weight)
     histogramBuilder.fillPtCategoryHistograms(prefix, leadPhoton.Pt(), weight)
 
-    if(leadPhoton.Pt > 40):
+    if(leadPhoton.Pt() > 40):
         histogramBuilder.fillCountHistograms(prefix, weight)
     #histogramBuilder.fillPhotonLocationCategoryHistograms(decay, findPhotonLocations(photons), reweight)
     #histogramBuilder.fillPtAndLocationCategoryHistograms(decay, findPhotonLocations(photons), leadPhoton.Pt(), reweight)

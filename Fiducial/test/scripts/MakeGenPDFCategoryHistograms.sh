@@ -2,7 +2,7 @@
 #Set up to take the ISR and FSR signal samples, make reco histograms for each, and make histograms
 #for the weighted merger. 
 #Example (should end in /)
-# ./MakeGenPDFCategoryHistograms.sh /data/users/cranelli/WGamGam/Acceptances/CommonFiducial_wMT_Skim_PDFReweights/
+# ./MakeGenPDFCategoryHistograms.sh /data/users/cranelli/WGamGam/Acceptances/CommonFiducial_NLO_wMT_Skim_PUWeights_PDFReweights/
 
 SKIM_PATH=$1
 SKIM_NAME=${SKIM_PATH%?} #Removes Last Character, should be a '/'
@@ -12,8 +12,8 @@ SKIM_NAME="${SKIM_NAME##*/}"
 
 SUFFIX="GenCategoryHistograms.root"
 
-ISR_DIR="job_summer12_WAA_ISR/"
-FSR_DIR="job_summer12_Wgg_FSR/"
+ISR_DIR="job_NLO_WAA_ISR/"
+FSR_DIR="job_NLO_WAA_FSR/"
 
 ROOT_NAME="tree.root"
 
